@@ -1,0 +1,617 @@
+/* =========================================================
+   PAYMENTS PAGE — PURE CSS (Matches Reference Screenshots)
+   ========================================================= */
+
+/* ---------- Page Container ---------- */
+.payments-page {
+    padding: 24px 28px;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    background-color: #f3f6fa;
+    min-height: 100%;
+    box-sizing: border-box;
+}
+
+/* =========================================================
+   TABS
+   ========================================================= */
+.payment-tabs {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    border-bottom: 1px solid #e8edf3;
+    padding: 0 4px;
+}
+
+.payment-tab {
+    padding: 12px 18px;
+    font-size: 14px;
+    font-weight: 600;
+    color: #64748b;
+    background: transparent;
+    border: none;
+    border-bottom: 2px solid transparent;
+    cursor: pointer;
+    font-family: inherit;
+    transition: all 0.15s ease;
+    margin-bottom: -1px;
+}
+
+.payment-tab:hover {
+    color: #0f172a;
+}
+
+.payment-tab.active {
+    color: #10b981;
+    border-bottom-color: #10b981;
+}
+
+/* =========================================================
+   OVERVIEW TAB
+   ========================================================= */
+
+/* ---- Stat Cards ---- */
+.payment-stats-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 18px;
+}
+
+@media (min-width: 640px) {
+    .payment-stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (min-width: 1024px) {
+    .payment-stats-grid {
+        grid-template-columns: repeat(4, 1fr);
+    }
+}
+
+.payment-stat-card {
+    background: #ffffff;
+    border: 1px solid #e8edf3;
+    border-radius: 16px;
+    padding: 22px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.03);
+}
+
+.payment-stat-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.payment-stat-icon {
+    width: 42px;
+    height: 42px;
+    border-radius: 11px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.payment-stat-icon.green {
+    background: #ecfdf5;
+    color: #10b981;
+}
+
+.payment-stat-icon.blue {
+    background: #eff6ff;
+    color: #3b82f6;
+}
+
+.payment-stat-icon.purple {
+    background: #f5f3ff;
+    color: #8b5cf6;
+}
+
+.payment-stat-icon.red {
+    background: #fef2f2;
+    color: #ef4444;
+}
+
+.payment-stat-badge {
+    padding: 4px 10px;
+    border-radius: 9999px;
+    font-size: 11.5px;
+    font-weight: 700;
+}
+
+.payment-stat-badge.up-green {
+    background: #ecfdf5;
+    color: #10b981;
+}
+
+.payment-stat-badge.up-blue {
+    background: #eff6ff;
+    color: #3b82f6;
+}
+
+.payment-stat-badge.up-purple {
+    background: #f5f3ff;
+    color: #8b5cf6;
+}
+
+.payment-stat-badge.down-red {
+    background: #fef2f2;
+    color: #ef4444;
+}
+
+.payment-stat-value {
+    font-size: 30px;
+    font-weight: 800;
+    color: #0f172a;
+    margin: 0;
+    line-height: 1.1;
+    letter-spacing: -0.02em;
+}
+
+.payment-stat-label {
+    font-size: 13px;
+    font-weight: 500;
+    color: #64748b;
+    margin: 4px 0 0 0;
+}
+
+/* ---- Chart Card ---- */
+.chart-card {
+    background: #ffffff;
+    border: 1px solid #e8edf3;
+    border-radius: 16px;
+    padding: 24px 26px;
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.03);
+}
+
+.chart-title {
+    font-size: 17px;
+    font-weight: 700;
+    color: #0f172a;
+    margin: 0 0 24px 0;
+}
+
+.chart-wrapper {
+    width: 100%;
+    overflow: hidden;
+}
+
+.chart-svg {
+    width: 100%;
+    height: 260px;
+    display: block;
+}
+
+.chart-labels {
+    display: flex;
+    justify-content: space-between;
+    padding: 8px 4px 0;
+    font-size: 12px;
+    color: #94a3b8;
+    font-weight: 500;
+}
+
+/* =========================================================
+   GATEWAYS TAB
+   ========================================================= */
+.gateways-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 20px;
+}
+
+@media (min-width: 1024px) {
+    .gateways-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+.gateway-card {
+    background: #ffffff;
+    border: 1px solid #e8edf3;
+    border-radius: 16px;
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.03);
+}
+
+.gateway-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+}
+
+.gateway-brand {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+}
+
+.gateway-logo {
+    width: 44px;
+    height: 44px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #ffffff;
+    font-weight: 700;
+    font-size: 18px;
+    flex-shrink: 0;
+}
+
+.gateway-logo.razorpay {
+    background: #3395ff;
+}
+
+.gateway-logo.stripe {
+    background: linear-gradient(135deg, #635bff 0%, #8b5cf6 100%);
+}
+
+.gateway-logo.payu {
+    background: linear-gradient(135deg, #ff6b6b 0%, #f97316 100%);
+}
+
+.gateway-logo.cashfree {
+    background: #10b981;
+}
+
+.gateway-info {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.gateway-name {
+    font-size: 16px;
+    font-weight: 700;
+    color: #0f172a;
+    margin: 0;
+}
+
+.gateway-env {
+    display: inline-block;
+    padding: 2px 9px;
+    border-radius: 9999px;
+    font-size: 10.5px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    width: fit-content;
+}
+
+.gateway-env.live {
+    background: #ecfdf5;
+    color: #10b981;
+}
+
+.gateway-env.test {
+    background: #ffedd5;
+    color: #ea580c;
+}
+
+/* Toggle Switch */
+.toggle {
+    position: relative;
+    width: 46px;
+    height: 26px;
+    border-radius: 9999px;
+    background: #e2e8f0;
+    cursor: pointer;
+    border: none;
+    padding: 0;
+    transition: background 0.2s ease;
+    flex-shrink: 0;
+}
+
+.toggle.on {
+    background: #10b981;
+}
+
+.toggle-knob {
+    position: absolute;
+    top: 3px;
+    left: 3px;
+    width: 20px;
+    height: 20px;
+    background: #ffffff;
+    border-radius: 50%;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+    transition: transform 0.2s ease;
+}
+
+.toggle.on .toggle-knob {
+    transform: translateX(20px);
+}
+
+/* Gateway Form */
+.gateway-field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.gateway-label {
+    font-size: 12.5px;
+    font-weight: 600;
+    color: #334155;
+}
+
+.gateway-input-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.gateway-input {
+    width: 100%;
+    padding: 11px 44px 11px 14px;
+    font-size: 13px;
+    font-family: inherit;
+    color: #0f172a;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 9px;
+    outline: none;
+    letter-spacing: 0.05em;
+    box-sizing: border-box;
+    transition: all 0.15s ease;
+}
+
+.gateway-input:focus {
+    background: #ffffff;
+    border-color: #10b981;
+    box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
+}
+
+.gateway-input-icon {
+    position: absolute;
+    right: 12px;
+    color: #94a3b8;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    background: none;
+    border: none;
+    padding: 4px;
+}
+
+.gateway-input-icon:hover {
+    color: #475569;
+}
+
+/* Gateway Actions */
+.gateway-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+}
+
+.btn-outline {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 11px 16px;
+    font-size: 13px;
+    font-weight: 600;
+    border-radius: 9px;
+    background: #ffffff;
+    color: #334155;
+    border: 1px solid #e2e8f0;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    font-family: inherit;
+}
+
+.btn-outline:hover {
+    background: #f8fafc;
+    border-color: #cbd5e1;
+}
+
+.btn-green {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 11px 16px;
+    font-size: 13px;
+    font-weight: 600;
+    border-radius: 9px;
+    background: #10b981;
+    color: #ffffff;
+    border: none;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    font-family: inherit;
+    box-shadow: 0 2px 6px rgba(16, 185, 129, 0.22);
+}
+
+.btn-green:hover {
+    background: #059669;
+}
+
+/* =========================================================
+   TRANSACTIONS TAB
+   ========================================================= */
+.transactions-container {
+    background: #ffffff;
+    border: 1px solid #e8edf3;
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.03);
+}
+
+.transactions-header {
+    padding: 22px 26px;
+    border-bottom: 1px solid #eef2f7;
+}
+
+.transactions-title {
+    font-size: 17px;
+    font-weight: 700;
+    color: #0f172a;
+    margin: 0;
+}
+
+.table-scroll {
+    width: 100%;
+    overflow-x: auto;
+}
+
+.tx-table {
+    width: 100%;
+    border-collapse: collapse;
+    min-width: 1000px;
+}
+
+.tx-table thead {
+    background: #f1f5f9;
+}
+
+.tx-table th {
+    padding: 14px 22px;
+    text-align: left;
+    font-size: 11px;
+    font-weight: 700;
+    color: #64748b;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    white-space: nowrap;
+}
+
+.tx-table tbody tr {
+    border-bottom: 1px solid #eef2f7;
+    transition: background 0.12s ease;
+}
+
+.tx-table tbody tr:last-child {
+    border-bottom: none;
+}
+
+.tx-table tbody tr:hover {
+    background: #f8fafc;
+}
+
+.tx-table td {
+    padding: 18px 22px;
+    font-size: 13.5px;
+    color: #334155;
+    vertical-align: middle;
+}
+
+.tx-id {
+    font-weight: 700;
+    color: #0f172a;
+    font-size: 13.5px;
+}
+
+.tx-customer {
+    font-weight: 600;
+    color: #0f172a;
+    font-size: 14px;
+}
+
+.tx-amount {
+    font-weight: 700;
+    color: #0f172a;
+    font-size: 14px;
+}
+
+.tx-gateway {
+    color: #64748b;
+    font-weight: 500;
+}
+
+.tx-order-link {
+    color: #3b82f6;
+    font-weight: 700;
+    font-size: 13.5px;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+.tx-order-link:hover {
+    text-decoration: underline;
+}
+
+/* Transaction status pills */
+.tx-status {
+    display: inline-block;
+    padding: 5px 12px;
+    border-radius: 9999px;
+    font-size: 11.5px;
+    font-weight: 600;
+    text-transform: lowercase;
+}
+
+.tx-status.success {
+    background: #dcfce7;
+    color: #16a34a;
+}
+
+.tx-status.pending {
+    background: #ffedd5;
+    color: #ea580c;
+}
+
+.tx-status.failed {
+    background: #fee2e2;
+    color: #dc2626;
+}
+
+.tx-status.refunded {
+    background: #ede9fe;
+    color: #7c3aed;
+}
+
+/* =========================================================
+   RESPONSIVE
+   ========================================================= */
+@media (max-width: 640px) {
+    .payments-page {
+        padding: 16px;
+    }
+
+    .payment-tabs {
+        overflow-x: auto;
+    }
+
+    .payment-tab {
+        padding: 10px 14px;
+        font-size: 13px;
+        white-space: nowrap;
+    }
+
+    .payment-stat-card {
+        padding: 18px;
+    }
+
+    .payment-stat-value {
+        font-size: 24px;
+    }
+
+    .chart-card {
+        padding: 18px;
+    }
+
+    .gateway-card {
+        padding: 20px;
+    }
+
+    .gateway-actions {
+        grid-template-columns: 1fr;
+    }
+
+    .transactions-header {
+        padding: 18px 20px;
+    }
+}

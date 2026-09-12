@@ -1,0 +1,119 @@
+:root {
+  --color-bg: #f3f5f8;
+  --color-sidebar: #0c1f38;
+  --color-sidebar-active: #16a34a;
+  --color-sidebar-text: #b9c4d4;
+  --color-sidebar-text-active: #ffffff;
+  --color-accent: #16a34a;
+  --color-accent-light: #e8f8ee;
+  --color-blue: #2563eb;
+  --color-red: #ef4444;
+  --color-orange: #f97316;
+  --color-purple: #7c3aed;
+  --color-pink: #ec4899;
+  --color-teal: #0d9488;
+  --color-card: #ffffff;
+  --color-border: #e6e9ef;
+  --color-text: #101828;
+  --color-text-muted: #667085;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --shadow-card: 0 1px 2px rgba(16, 24, 40, 0.04), 0 1px 3px rgba(16, 24, 40, 0.06);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html, body, #root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  background: var(--color-bg);
+  color: var(--color-text);
+  -webkit-font-smoothing: antialiased;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+button {
+  font-family: inherit;
+}
+
+.app-shell {
+  display: flex;
+  min-height: 100vh;
+}
+
+.main-area {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.content {
+  padding: 24px 28px 40px;
+  flex: 1;
+}
+
+.card {
+  background: var(--color-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-card);
+}
+
+.skeleton {
+  background: linear-gradient(90deg, #eef1f5 25%, #e4e8ee 37%, #eef1f5 63%);
+  background-size: 400% 100%;
+  animation: skeleton-loading 1.4s ease infinite;
+  border-radius: 6px;
+}
+
+@keyframes skeleton-loading {
+  0% { background-position: 100% 50%; }
+  100% { background-position: 0 50%; }
+}
+
+.error-banner {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #991b1b;
+  padding: 12px 16px;
+  border-radius: var(--radius-md);
+  font-size: 14px;
+  margin-bottom: 16px;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 40px 20px;
+  color: var(--color-text-muted);
+  font-size: 14px;
+}
+
+@media (max-width: 900px) {
+  .content {
+    padding: 16px;
+    /* bottom tab bar (~64px) + safe area ke peeche content na chhupe */
+    padding-bottom: calc(76px + env(safe-area-inset-bottom));
+  }
+
+  /* rubber-band overscroll pe safari me white flash na dikhe - app jaisa solid feel */
+  html, body {
+    background: var(--color-bg);
+    overscroll-behavior-y: none;
+  }
+
+  /* mobile pe text ko native app jaisa non-selectable-by-accident banate hain nav elements ke liye */
+  .sidebar__link, .bottom-nav__item, .topbar__hamburger {
+    -webkit-tap-highlight-color: transparent;
+  }
+}

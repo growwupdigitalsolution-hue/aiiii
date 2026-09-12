@@ -1,0 +1,189 @@
+.sidebar {
+    width: 232px;
+    background: var(--color-sidebar);
+    color: var(--color-sidebar-text);
+    display: flex;
+    flex-direction: column;
+    flex-shrink: 0;
+    height: 100vh;
+    position: sticky;
+    top: 0;
+    transition: width 0.2s ease;
+}
+
+.sidebar--collapsed {
+    width: 76px;
+}
+
+.sidebar__brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 20px 18px;
+    padding-top: max(20px, env(safe-area-inset-top));
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.sidebar__close-btn {
+    display: none;
+    margin-left: auto;
+    background: transparent;
+    border: none;
+    color: var(--color-sidebar-text);
+    padding: 4px;
+    cursor: pointer;
+    flex-shrink: 0;
+}
+
+.sidebar__logo {
+    width: 34px;
+    height: 34px;
+    border-radius: 9px;
+    background: var(--color-accent);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    flex-shrink: 0;
+}
+
+.sidebar__brand-name {
+    font-weight: 700;
+    font-size: 14px;
+    color: white;
+    letter-spacing: 0.3px;
+}
+
+.sidebar__brand-sub {
+    font-size: 9px;
+    color: #7c8ba1;
+    letter-spacing: 0.6px;
+}
+
+.sidebar__nav {
+    flex: 1;
+    overflow-y: auto;
+    padding: 12px 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.sidebar__link {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 9px 12px;
+    border-radius: 8px;
+    font-size: 13.5px;
+    color: var(--color-sidebar-text);
+    white-space: nowrap;
+    overflow: hidden;
+}
+
+.sidebar__link:hover {
+    background: rgba(255, 255, 255, 0.06);
+    color: white;
+}
+
+.sidebar__link--active {
+    background: var(--color-sidebar-active);
+    color: white;
+    font-weight: 600;
+}
+
+.sidebar__footer {
+    padding: 14px;
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.sidebar__user {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 6px;
+    margin-bottom: 8px;
+}
+
+.sidebar__avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    background: var(--color-accent);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 13px;
+    flex-shrink: 0;
+}
+
+.sidebar__user-name {
+    font-size: 13px;
+    color: white;
+    font-weight: 600;
+}
+
+.sidebar__user-role {
+    font-size: 11px;
+    color: #f0b429;
+}
+
+.sidebar__collapse-btn {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    background: transparent;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: var(--color-sidebar-text);
+    padding: 7px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 12.5px;
+}
+
+.sidebar__collapse-btn:hover {
+    background: rgba(255, 255, 255, 0.06);
+}
+
+@media (max-width: 900px) {
+    .sidebar {
+        position: fixed;
+        z-index: 50;
+        left: 0;
+        top: 0;
+        width: 78%;
+        max-width: 300px;
+        transform: translateX(-100%);
+        box-shadow: 2px 0 24px rgba(0, 0, 0, 0.25);
+        padding-bottom: env(safe-area-inset-bottom);
+    }
+    .sidebar--open {
+        transform: translateX(0);
+    }
+    .sidebar__close-btn {
+        display: flex;
+    }
+    /* mobile drawer me bottom-nav already navigation de raha hai,
+       isliye collapse button (jo desktop ke liye hai) chhupa dete hain */
+    .sidebar__collapse-btn--desktop-only {
+        display: none;
+    }
+}
+
+/* drawer khulne par piche content ko dim karne wala overlay - AppLayout se use hota hai */
+.app-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(12, 31, 56, 0.5);
+    z-index: 45;
+}
+
+@media (min-width: 901px) {
+    .app-backdrop {
+        display: none;
+    }
+}

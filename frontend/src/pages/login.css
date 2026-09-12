@@ -1,0 +1,291 @@
+/* src/pages/login.css */
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@600;700&family=Inter:wght@400;500;600;700&display=swap');
+
+.login-page {
+    min-height: 100vh;
+    min-height: 100dvh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background:
+        radial-gradient(circle at 15% 10%, rgba(31, 138, 94, 0.25), transparent 40%),
+        linear-gradient(160deg, #0B3D2E 0%, var(--color-sidebar) 55%);
+    padding: 28px;
+}
+
+.login-card {
+    width: 100%;
+    max-width: 400px;
+    background: #fff;
+    border-radius: 28px;
+    overflow: hidden;
+    box-shadow: 0 30px 60px -20px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.06);
+    display: flex;
+    flex-direction: column;
+}
+
+.login-header {
+    position: relative;
+    color: #fff;
+    padding: 36px 32px 60px;
+    background:
+        radial-gradient(rgba(255, 255, 255, .09) 1px, transparent 1px) 0 0/16px 16px,
+        linear-gradient(135deg, var(--color-accent), #146B48);
+}
+
+.login-brand {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 26px;
+}
+
+.login-logo {
+    width: 44px;
+    height: 44px;
+    border-radius: 13px;
+    background: rgba(255, 255, 255, .18);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    flex-shrink: 0;
+}
+
+.login-logo::after {
+    content: "";
+    position: absolute;
+    bottom: -2px;
+    right: -2px;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: #4ADE80;
+    border: 2px solid #146B48;
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0% {
+        box-shadow: 0 0 0 0 rgba(74, 222, 128, .6);
+    }
+
+    70% {
+        box-shadow: 0 0 0 8px rgba(74, 222, 128, 0);
+    }
+
+    100% {
+        box-shadow: 0 0 0 0 rgba(74, 222, 128, 0);
+    }
+}
+
+.login-brand-name {
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 700;
+    font-size: 16px;
+    letter-spacing: 0.2px;
+}
+
+.login-brand-sub {
+    font-size: 10px;
+    letter-spacing: 1.6px;
+    opacity: 0.85;
+    text-transform: uppercase;
+    margin-top: 1px;
+}
+
+.login-title {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 22px;
+    font-weight: 700;
+    margin: 0 0 6px;
+}
+
+.login-subtitle {
+    font-size: 13px;
+    line-height: 1.5;
+    opacity: 0.88;
+    margin: 0;
+    max-width: 280px;
+}
+
+.login-body {
+    background: #fff;
+    border-radius: 28px 28px 0 0;
+    margin-top: -24px;
+    padding: 26px 28px 30px;
+    position: relative;
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.error-banner {
+    background: #FDECEC;
+    color: #B3261E;
+    border: 1px solid #F6C6C4;
+    padding: 10px 12px;
+    border-radius: 10px;
+    font-size: 12.5px;
+    margin: 0 0 14px;
+}
+
+.login-label {
+    font-size: 11.5px;
+    font-weight: 700;
+    color: var(--color-text, #12241d);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin: 16px 0 6px;
+}
+
+.login-label:first-of-type {
+    margin-top: 2px;
+}
+
+.login-input {
+    width: 100%;
+    padding: 13px 14px;
+    border: 1.5px solid #E4E9E7;
+    border-radius: 12px;
+    font-size: 14px;
+    background: #F7F9F8;
+    color: var(--color-text, #12241d);
+    font-family: inherit;
+    outline: none;
+    transition: border-color .15s, background .15s, box-shadow .15s;
+}
+
+.login-input:focus {
+    border-color: var(--color-accent);
+    background: #fff;
+    box-shadow: 0 0 0 4px rgba(31, 138, 94, .12);
+}
+
+.login-input::placeholder {
+    color: #9AA6A1;
+}
+
+/* select + number ek row me, hamesha side-by-side rahenge chahe kuch bhi ho */
+.login-mobile-row {
+    display: flex;
+    gap: 8px;
+}
+
+.login-country-select {
+    flex: 0 0 110px;
+    min-width: 0;
+    -webkit-appearance: none;
+    appearance: none;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='6'><path d='M0 0l5 6 5-6z' fill='%235b6b64'/></svg>");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    padding-right: 28px;
+    cursor: pointer;
+}
+
+.login-mobile-input {
+    flex: 1;
+    min-width: 0;
+}
+
+.login-submit {
+    margin-top: 24px;
+    width: 100%;
+    border: none;
+    color: #fff;
+    padding: 14px;
+    border-radius: 12px;
+    font-size: 14.5px;
+    font-weight: 700;
+    letter-spacing: 0.2px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    background: linear-gradient(135deg, var(--color-accent), #146B48);
+    box-shadow: 0 10px 22px -8px rgba(31, 138, 94, .6);
+    transition: transform .12s ease, box-shadow .12s ease;
+}
+
+.login-submit:hover:not(:disabled) {
+    transform: translateY(-1px);
+    box-shadow: 0 12px 26px -8px rgba(31, 138, 94, .7);
+}
+
+.login-submit:active:not(:disabled) {
+    transform: translateY(0);
+}
+
+.login-submit:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+}
+
+.login-switch {
+    margin: 18px 0 0;
+    text-align: center;
+    font-size: 13px;
+    color: #5b6b64;
+}
+
+.login-switch-btn {
+    background: none;
+    border: none;
+    color: #146B48;
+    font-weight: 700;
+    cursor: pointer;
+    padding: 0;
+    font-size: 13px;
+    font-family: inherit;
+}
+
+.login-switch-btn:hover {
+    text-decoration: underline;
+}
+
+.spin {
+    animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+@media (max-width: 480px) {
+    .login-page {
+        padding: 0;
+        align-items: flex-start;
+    }
+
+    .login-card {
+        max-width: 100%;
+        min-height: 100vh;
+        min-height: 100dvh;
+        border-radius: 0;
+        box-shadow: none;
+    }
+
+    .login-header {
+        padding-top: max(52px, env(safe-area-inset-top));
+        padding-bottom: 64px;
+    }
+
+    .login-body {
+        border-radius: 28px 28px 0 0;
+        margin-top: -32px;
+        flex: 1;
+        padding-bottom: calc(30px + env(safe-area-inset-bottom));
+    }
+
+    /* chhoti screen pe country select thoda aur compact */
+    .login-country-select {
+        flex-basis: 92px;
+        font-size: 13px;
+        padding-left: 10px;
+    }
+}

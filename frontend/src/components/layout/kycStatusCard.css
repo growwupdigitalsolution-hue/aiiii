@@ -1,0 +1,83 @@
+/* src/components/sidebar/kycStatusCard.css */
+.kyc-card {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 14px;
+    margin: 12px;
+    border-radius: 10px;
+    background: #F6F7F5;
+    border: 1px solid #E3E6E1;
+}
+
+.kyc-card__icon {
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    background: #E7F7EC;
+    color: #1B8F4C;
+}
+
+.kyc-card[data-status="rejected"] .kyc-card__icon {
+    background: #FCEAEA;
+    color: #C0392B;
+}
+
+.kyc-card[data-status="in_review"] .kyc-card__icon {
+    background: #FFF4E0;
+    color: #B4720A;
+}
+
+.kyc-card__label {
+    font-size: 13px;
+    font-weight: 600;
+    color: #1A1F1B;
+    margin: 0;
+}
+
+.kyc-card__body {
+    font-size: 12px;
+    line-height: 1.4;
+    color: #6B716C;
+    margin: 0;
+}
+
+.kyc-card__cta {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    margin-top: 4px;
+    padding: 8px 12px;
+    border: none;
+    border-radius: 7px;
+    background: #1B8F4C;
+    color: #fff;
+    font-size: 12.5px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s ease;
+}
+
+.kyc-card__cta:hover {
+    background: #167A40;
+}
+
+.kyc-card[data-status="rejected"] .kyc-card__cta {
+    background: #C0392B;
+}
+
+.kyc-card[data-status="rejected"] .kyc-card__cta:hover {
+    background: #A5321F;
+}
+
+.kyc-card[data-status="in_review"] .kyc-card__cta {
+    background: #B4720A;
+}
+
+.kyc-card[data-status="in_review"] .kyc-card__cta:hover {
+    background: #995E08;
+}
