@@ -81,13 +81,8 @@ class WebhookController {
                     // Resolve which of your users owns this WABA/phone
                     // Adjust this lookup to your actual user schema
                     const userModel = require("../models/users.model");
-                    const owner = await userModel.findOne({
-                        $or: [
-                            { whatsappPhoneNumberId: phoneNumberId },
-                            { whatsappAccountId: phoneNumberId },
-                            { whatsappNumber: displayPhone },
-                        ],
-                    });
+                    const owner = await userModel.findOne({ whatsappNumberId: phoneNumberId });
+                    console.log("[webhook] incoming message for phone_number_id", phoneNumberId, "owner:", owner?._id);
                     if (!owner) {
                         console.warn("[webhook] no owner for phone_number_id", phoneNumberId);
                         continue;
@@ -163,7 +158,7 @@ class WebhookController {
                 }
             }
         } catch (err) {
-            console.error("[webhook] error:", err);
+            console.log("[webhook] error:", err);
         }
     }
 }

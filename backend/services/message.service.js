@@ -1,6 +1,6 @@
 // services/message.service.js
-const messageModel = require("../models/messages.model");
-
+const messageModel = require("../models/message.model");
+const ticketService = require("./ticket.service");
 const saveMessageRecord = async (data) => messageModel.create(data);
 
 const updateMessageRecord = async (messageId, data) =>
@@ -42,7 +42,7 @@ const getBroadcastMessageStats = async (broadcastId) => {
     return result[0] || { sent: 0, delivered: 0, read: 0, failed: 0 };
 };
 
-createAndUpsertTicket(getData) {
+const createAndUpsertTicket = async (getData) => {
     try {
         const message = await messageModel.create({
             contactId: getData.contactId,
