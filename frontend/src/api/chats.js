@@ -1,27 +1,86 @@
 import apiClient from "./client";
 
-/* ---------- CONTACTS ---------- */
-export async function listContacts({ limit = 50, skip = 0, search = "" } = {}) {
-    const { data } = await apiClient.get("/contacts", {
-        params: { limit, skip, search },
-    });
-    return data; // { ErrorMessage, data: [...], countData }
-}
+/* =========================================================
+   CONTACTS  (matches your actual backend routes)
+   ========================================================= */
 
-export async function getContactById(id) {
-    const { data } = await apiClient.get(`/contacts/${id}`);
+/**
+ * GET /getall-group-contact
+ * Query: ?groupId=&limit=&skip=&search=
+ * Response: { ErrorMessage, data: [...], countData }
+ */
+export async function listContacts({ groupId, limit = 100, skip = 0, search = "" } = {}) {
+    const params = { limit, skip, search };
+    if (groupId) params.groupId = groupId;
+
+    const { data } = await apiClient.get("/getall-group-contact", { params });
     return data;
 }
 
-/* ---------- MESSAGES ---------- */
-export async function getMessagesByContact(contactId, { limit = 50, skip = 0 } = {}) {
+/**
+ * GET /get-contactbyid?id=...
+ * (Your route uses query string, not path param)
+ */
+export async function getContactById(id) {
+    const { data } = await apiClient.get("/get-contactbyid", {
+        params: { id },
+    });
+    return data;
+}
+
+/**
+ * POST /create-group-contact
+ * Body: { name, mobileCode, mobileNo, email?, groupId? }
+ */
+export async function createContact(payload) {
+    const { data } = await apiClient.post("/create-group-contact", payload);
+    return data;
+}
+
+/**
+ * PUT /update-contact/:id
+ */
+export async function updateContact(id, payload) {
+    const { data } = await apiClient.put(`/update-contact/${id}`, payload);
+    return data;
+}
+
+/**
+ * DELETE /delete-contact?id=...
+ */
+export async function deleteContact(id) {
+    const { data } = await apiClient.delete("/delete-contact", {
+        params: { id },
+    });
+    return data;
+}
+
+/**
+ * DELETE /delete-group-contact/:id
+ */
+export async function deleteGroupContact(id) {
+    const { data } = await apiClient.delete(`/delete-group-contact/${id}`);
+    return data;
+}
+
+/* =========================================================
+   MESSAGES
+   ========================================================= */
+
+/**
+ * GET /message/get-by-contact/:contactId
+ */
+export async function getMessagesByContact(contactId, { limit = 100, skip = 0 } = {}) {
     const { data } = await apiClient.get(
         `/message/get-by-contact/${contactId}`,
         { params: { limit, skip } }
     );
-    return data; // { ErrorMessage, data: [...], countData }
+    return data;
 }
 
+/**
+ * POST /message/send
+ */
 export async function sendMessage({ contactId, message, msgType = "text" }) {
     const { data } = await apiClient.post("/message/send", {
         contactId,
