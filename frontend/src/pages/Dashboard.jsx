@@ -14,14 +14,16 @@ import RecentOrdersList from "../components/dashboard/RecentOrdersList";
 import KycStatusCard from "../components/layout/KycStatusCard";
 import { useAuth } from "../context/AuthContext";
 import { launchEmbeddedSignup } from "../lib/embeddedSignup";
-import { completeEmbeddedSignup } from "../api/auth"; // aapko banana hoga, neeche note dekhein
+import { completeEmbeddedSignup } from "../api/auth";
 import {
     getDashboardSummary, getMessageAnalytics, getRevenueTrend,
     getTicketStatusDistribution, getRecentActivity, getRecentOrders
 } from "../api/dashboard";
+import { isKycVerified, getKycStatus } from "../helper/kycStatus";
 
 export default function Dashboard() {
-    const { user, refreshUser } = useAuth(); // refreshUser: neeche note me explain kiya hai
+    const { user, refreshUser } = useAuth();
+
     const [summary, setSummary] = useState(null);
     const [messageAnalytics, setMessageAnalytics] = useState(null);
     const [revenueTrend, setRevenueTrend] = useState(null);
@@ -32,11 +34,15 @@ export default function Dashboard() {
     const [loading, setLoading] = useState(true);
     const [signupError, setSignupError] = useState("");
 
-    const kycStatus = user?.kycStatus || "pending";
-    const kycVerified = kycStatus === "verified";
+    /* ✅ Fixed: robust KYC check via helper */
+    const kycStatus = getKycStatus(user);
+    const kycVerified = isKycVerified(kycStatus);
 
     useEffect(() => {
-        if (!kycVerified) return; // KYC pending hai toh dashboard data fetch karne ki zaroorat nahi
+        if (!kycVerified) {
+            setLoading(false);
+            return;
+        }
         let cancelled = false;
 
         async function load() {
@@ -60,7 +66,10 @@ export default function Dashboard() {
                 setRecentOrders(ro);
             } catch (err) {
                 if (!cancelled) {
-                    setError(err.response?.data?.ErrorMessage || "Unable to load dashboard data. Please try again.");
+                    setError(
+                        err?.response?.data?.ErrorMessage ||
+                        "Unable to load dashboard data. Please try again."
+                    );
                 }
             } finally {
                 if (!cancelled) setLoading(false);
@@ -68,34 +77,40 @@ export default function Dashboard() {
         }
 
         load();
-        return () => { cancelled = true; };
+        return () => {
+            cancelled = true;
+        };
     }, [kycVerified]);
 
     const handleStartKyc = () => {
-        alert()
         setSignupError("");
         launchEmbeddedSignup({
             onSuccess: async (code) => {
                 try {
-                    await completeEmbeddedSignup(code); // backend: code -> WABA token exchange
-                    await refreshUser?.();               // user.kycStatus ko refresh karo
+                    await completeEmbeddedSignup(code);
+                    await refreshUser?.();
                 } catch (err) {
                     setSignupError(
-                        err?.response?.data?.ErrorMessage || "Verification failed, please try again"
+                        err?.response?.data?.ErrorMessage ||
+                        "Verification failed, please try again"
                     );
                 }
             },
             onError: (msg) => setSignupError(msg),
-            onCancel: () => { }, // user ne popup band kar diya, kuch nahi karna
+            onCancel: () => { },
         });
     };
 
+    /* ✅ Only gate when KYC is truly not verified */
     if (!kycVerified) {
         return (
             <AppLayout title="Dashboard">
                 <div className="kyc-gate">
                     {signupError && <div className="error-banner">{signupError}</div>}
-                    <KycStatusCard status={kycStatus} onStart={handleStartKyc} />
+                    <KycStatusCard
+                        status={kycStatus || "pending"}
+                        onStart={handleStartKyc}
+                    />
                 </div>
             </AppLayout>
         );
@@ -162,8 +177,12 @@ function DashboardSkeleton() {
                 ))}
             </div>
             <div className="dashboard-grid">
-                <div className="card" style={{ height: 300 }}><div className="skeleton" style={{ width: "100%", height: "100%" }} /></div>
-                <div className="card" style={{ height: 300 }}><div className="skeleton" style={{ width: "100%", height: "100%" }} /></div>
+                <div className="card" style={{ height: 300 }}>
+                    <div className="skeleton" style={{ width: "100%", height: "100%" }} />
+                </div>
+                <div className="card" style={{ height: 300 }}>
+                    <div className="skeleton" style={{ width: "100%", height: "100%" }} />
+                </div>
             </div>
         </>
     );

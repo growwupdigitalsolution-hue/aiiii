@@ -38,20 +38,26 @@ export default function Login() {
     const handleSubmit = async (e) => {
         e.preventDefault();
         const err = validate();
-        if (err) {
-            setFormError(err);
-            return;
-        }
+        if (err) { setFormError(err); return; }
+
         setFormError("");
         setSubmitting(true);
 
-        const ok =
-            mode === "login"
-                ? await login(mobileCode, mobileNo, password)
-                : await signup(name, mobileCode, mobileNo, password);
+        if (mode === "login") {
+            const ok = await login(mobileCode, mobileNo, password);
+            setSubmitting(false);
+            if (ok) navigate("/dashboard");
+        } else {
+            const result = await signup(name, mobileCode, mobileNo, password);
+            setSubmitting(false);
 
-        setSubmitting(false);
-        if (ok) navigate("/dashboard");
+            if (result === true) {
+                navigate("/dashboard");          // backend auto-logged us in
+            } else if (result?.registered) {
+                setMode("login");                // switch to login tab
+                setFormError("Account created. Please log in.");
+            }
+        }
     };
 
     const switchMode = (nextMode) => {
