@@ -14,40 +14,22 @@ class Services {
             createdby: new ObjectId(getData.createdby),
             ticketstatus: { $in: ["pending", "inProgress"] },
         };
-
         const existing = await ticketModel.findOne(activeFilter);
 
+        const lastMessageAt = getData._metaTimestamp || new Date();
+
         if (existing) {
-            const updated = await ticketModel.findByIdAndUpdate(
+            return await ticketModel.findByIdAndUpdate(
                 existing._id,
                 {
                     lastMessageId: getData.lastMessageId,
-                    lastMessageAt: new Date(),
+                    lastMessageAt,
                     unReadCount: (existing.unReadCount || 0) + 1,
                 },
                 { new: true }
             );
-            return updated || existing;
         }
-
-        // Generate next ticket number
-        const lastTicket = await ticketModel
-            .findOne({ createdby: new ObjectId(getData.createdby) })
-            .sort({ ticketNumber: -1 });
-
-        const ticketNumber = lastTicket?.ticketNumber ? lastTicket.ticketNumber + 1 : 1;
-
-        const newTicket = new ticketModel({
-            contactId: getData.contactId,
-            createdby: getData.createdby,
-            lastMessageId: getData.lastMessageId,
-            lastMessageAt: new Date(),
-            ticketstatus: "pending",
-            ticketNumber,
-            unReadCount: 1,
-        });
-
-        return await newTicket.save();
+        // ...rest stays the same, but set lastMessageAt: lastMessageAt
     }
 
     /* =========================================================

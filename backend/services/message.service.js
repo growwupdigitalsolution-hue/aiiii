@@ -42,6 +42,41 @@ const getBroadcastMessageStats = async (broadcastId) => {
     return result[0] || { sent: 0, delivered: 0, read: 0, failed: 0 };
 };
 
+createAndUpsertTicket(getData) {
+    try {
+        const message = await messageModel.create({
+            contactId: getData.contactId,
+            createdby: getData.createdby,
+            sendBy: getData.sendBy || "customer",
+            msgType: getData.msgType || "text",
+            message: getData.message || "",
+            msgfile: getData.msgfile || "",
+            fileType: getData.fileType || "",
+            fileName: getData.fileName || "",
+            whatsAppMessageId: getData.whatsAppMessageId || "",
+            whatsappReplyMsgId: getData.whatsappReplyMsgId || "",
+            templateSnapshot: getData.templateSnapshot || null,
+            interactiveReply: getData.interactiveReply || null,
+            createdAt: getData._metaTimestamp || undefined, // preserve Meta timestamp
+        });
+
+        let ticket = null;
+        if (getData.sendBy === "customer") {
+            ticket = await ticketService.create({
+                contactId: getData.contactId,
+                createdby: getData.createdby,
+                lastMessageId: message._id,
+                _metaTimestamp: getData._metaTimestamp,
+            });
+        }
+
+        return { message, ticket };
+    } catch (err) {
+        console.error("Error in messageService.createAndUpsertTicket:", err);
+        return { message: null, ticket: null };
+    }
+}
+
 const softDeleteMessage = async (messageId) =>
     messageModel.findOneAndUpdate({ _id: messageId }, { isDelete: true });
 
@@ -53,5 +88,6 @@ module.exports = {
     findMessagesByContactId,
     findMessagesByBroadcastId,
     getBroadcastMessageStats,
-    softDeleteMessage
+    softDeleteMessage,
+    createAndUpsertTicket
 };
