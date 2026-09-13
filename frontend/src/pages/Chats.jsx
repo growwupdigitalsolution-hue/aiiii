@@ -1,129 +1,200 @@
-import { useCallback, useEffect, useRef, useState } from "react";
-import {
-    Search, Phone, Video, Star, Archive, MoreVertical, ArrowLeft,
-    Smile, Paperclip, Image as ImageIcon, FileText, MapPin, Mic, Send, CheckCheck,
-} from "lucide-react";
+import { useEffect, useRef, useState, useCallback } from "react";
+import { Search, Send, Loader2, MessageSquare, User } from "lucide-react";
 import AppLayout from "../components/layout/AppLayout";
-import { getThreads, getMessages, sendMessage } from "../api/chats";
-import { formatRelativeTime, formatMessageTime, getInitials } from "../helper/chatHelpers";
+import { useAuth } from "../context/AuthContext";
+import { socket } from "../socket";
+import {
+    listContacts,
+    getMessagesByContact,
+    sendMessage,
+} from "../api/chats";
 import "./chats.css";
 
-const FILTERS = ["All", "Unread", "VIP", "Complaints"];
-const QUICK_REPLIES = [
-    "Thank you for contacting us!",
-    "Let me check that for you.",
-    "Your order is on the way!",
-    "I'll escalate this to our team.",
-];
-const MOBILE_BREAKPOINT = 760;
-
-function useIsMobile(breakpoint = MOBILE_BREAKPOINT) {
-    const [isMobile, setIsMobile] = useState(
-        () => typeof window !== "undefined" && window.innerWidth <= breakpoint
-    );
-    useEffect(() => {
-        const mql = window.matchMedia(`(max-width: ${breakpoint}px)`);
-        const handler = (e) => setIsMobile(e.matches);
-        mql.addEventListener("change", handler);
-        return () => mql.removeEventListener("change", handler);
-    }, [breakpoint]);
-    return isMobile;
-}
-
 export default function Chats() {
-    const isMobile = useIsMobile();
+    const { user } = useAuth();
 
-    const [threads, setThreads] = useState([]);
-    const [threadsLoading, setThreadsLoading] = useState(true);
-    const [threadsError, setThreadsError] = useState("");
+    const [contacts, setContacts] = useState([]);
+    const [contactsLoading, setContactsLoading] = useState(true);
+    const [contactsError, setContactsError] = useState("");
 
     const [search, setSearch] = useState("");
-    const [filter, setFilter] = useState("All");
-    const [selectedId, setSelectedId] = useState(null);
+    const [selectedContact, setSelectedContact] = useState(null);
 
     const [messages, setMessages] = useState([]);
     const [messagesLoading, setMessagesLoading] = useState(false);
+    const [messagesError, setMessagesError] = useState("");
+
     const [draft, setDraft] = useState("");
     const [sending, setSending] = useState(false);
 
-    const scrollRef = useRef(null);
+    const messagesEndRef = useRef(null);
 
-    const fetchThreads = useCallback(async () => {
-        setThreadsLoading(true);
-        setThreadsError("");
+    /* =========================================================
+       1. Load contacts once
+       ========================================================= */
+    const loadContacts = useCallback(async (searchTerm = "") => {
         try {
-            const { threads: data } = await getThreads();
-            setThreads(Array.isArray(data) ? data : []);
+            setContactsLoading(true);
+            setContactsError("");
+            const res = await listContacts({ limit: 100, search: searchTerm });
+            setContacts(Array.isArray(res?.data) ? res.data : []);
         } catch (err) {
-            setThreadsError(err.response?.data?.ErrorMessage || "Unable to load chats. Please try again.");
+            console.error("loadContacts failed:", err);
+            setContactsError(
+                err?.response?.data?.ErrorMessage || "Failed to load contacts"
+            );
+            setContacts([]);
         } finally {
-            setThreadsLoading(false);
+            setContactsLoading(false);
         }
     }, []);
 
     useEffect(() => {
-        fetchThreads();
-    }, [fetchThreads]);
+        loadContacts();
+    }, [loadContacts]);
 
-    const filteredThreads = threads.filter((t) => {
-        const q = search.trim().toLowerCase();
-        const matchesSearch = !q || t.name?.toLowerCase().includes(q) || t.lastMessage?.toLowerCase().includes(q);
-        const matchesFilter =
-            filter === "All" ||
-            (filter === "Unread" && t.unreadCount > 0) ||
-            (filter === "VIP" && t.tag === "VIP") ||
-            (filter === "Complaints" && t.tag === "Complaint");
-        return matchesSearch && matchesFilter;
-    });
+    /* Debounced search */
+    useEffect(() => {
+        const t = setTimeout(() => loadContacts(search), 350);
+        return () => clearTimeout(t);
+    }, [search, loadContacts]);
 
-    const selectedThread = threads.find((t) => t._id === selectedId) || null;
-
-    const openThread = async (thread) => {
-        setSelectedId(thread._id);
-        setMessagesLoading(true);
+    /* =========================================================
+       2. Load messages when a contact is selected
+       ========================================================= */
+    const loadMessages = useCallback(async (contactId) => {
+        if (!contactId) return;
         try {
-            const { messages: data } = await getMessages(thread._id);
-            setMessages(Array.isArray(data) ? data : []);
-        } catch {
-            setMessages([]);
+            setMessagesLoading(true);
+            setMessagesError("");
+            setMessages([]);       // clear immediately to prevent stale flash
+            const res = await getMessagesByContact(contactId, { limit: 100 });
+            setMessages(Array.isArray(res?.data) ? res.data : []);
+        } catch (err) {
+            console.error("loadMessages failed:", err);
+            setMessagesError(
+                err?.response?.data?.ErrorMessage || "Failed to load messages"
+            );
         } finally {
             setMessagesLoading(false);
         }
-        // optimistic local "mark as read" — swap for a real API call once you have one
-        setThreads((prev) => prev.map((t) => (t._id === thread._id ? { ...t, unreadCount: 0 } : t)));
-    };
+    }, []);
 
     useEffect(() => {
-        scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
+        if (!selectedContact?._id) {
+            setMessages([]);
+            return;
+        }
+        loadMessages(selectedContact._id);
+    }, [selectedContact?._id, loadMessages]);
+
+    /* =========================================================
+       3. Auto-scroll to bottom when messages change
+       ========================================================= */
+    useEffect(() => {
+        if (messagesEndRef.current) {
+            messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
+        }
     }, [messages]);
 
-    const handleSend = async () => {
-        const text = draft.trim();
-        if (!text || !selectedThread || sending) return;
+    /* =========================================================
+       4. Socket — incoming messages / sent confirmations
+       ========================================================= */
+    useEffect(() => {
+        if (!socket) return;
 
-        setSending(true);
-        const optimistic = {
-            _id: `temp-${Date.now()}`,
-            sender: "agent",
-            text,
-            timestamp: new Date().toISOString(),
-            status: "sent",
+        const onIncoming = (msg) => {
+            if (!msg) return;
+
+            // Is this message for the currently open conversation?
+            const isForOpenChat =
+                selectedContact?._id &&
+                String(msg.contactId) === String(selectedContact._id);
+
+            if (isForOpenChat) {
+                setMessages((prev) => {
+                    // prevent duplicates by _id
+                    if (prev.some((m) => m._id === msg._id)) return prev;
+                    return [...prev, msg];
+                });
+            }
+
+            // Update contacts preview + move to top
+            setContacts((prev) => {
+                const idx = prev.findIndex((c) => c._id === msg.contactId);
+                if (idx === -1) return prev;
+                const updated = [...prev];
+                updated[idx] = {
+                    ...updated[idx],
+                    lastMessage: {
+                        message: msg.message,
+                        createdAt: msg.createdAt,
+                        sendBy: msg.sendBy,
+                    },
+                    lastMessageAt: msg.createdAt,
+                };
+                return updated.sort(
+                    (a, b) =>
+                        new Date(b.lastMessageAt || 0) - new Date(a.lastMessageAt || 0)
+                );
+            });
         };
-        setMessages((prev) => [...prev, optimistic]);
-        setDraft("");
 
+        const onSent = (msg) => {
+            if (!msg) return;
+            setMessages((prev) => {
+                if (prev.some((m) => m._id === msg._id)) return prev;
+                if (
+                    selectedContact?._id &&
+                    String(msg.contactId) === String(selectedContact._id)
+                ) {
+                    return [...prev, msg];
+                }
+                return prev;
+            });
+        };
+
+        socket.on("message_received", onIncoming);
+        socket.on("ticket_message_received", (ticket) => {
+            // Optional: refresh contacts when a new ticket comes in
+            if (ticket?.contactId) {
+                loadContacts();
+            }
+        });
+        socket.on("message_sent", onSent);
+
+        return () => {
+            socket.off("message_received", onIncoming);
+            socket.off("ticket_message_received");
+            socket.off("message_sent", onSent);
+        };
+    }, [selectedContact?._id, loadContacts]);
+
+    /* =========================================================
+       5. Send a message
+       ========================================================= */
+    const handleSend = async () => {
+        if (!selectedContact?._id || !draft.trim() || sending) return;
+        const text = draft.trim();
+        setDraft("");
         try {
-            const saved = await sendMessage(selectedThread._id, text);
-            setMessages((prev) => prev.map((m) => (m._id === optimistic._id ? saved || optimistic : m)));
-            setThreads((prev) =>
-                prev.map((t) =>
-                    t._id === selectedThread._id
-                        ? { ...t, lastMessage: text, lastMessageAt: optimistic.timestamp }
-                        : t
-                )
+            setSending(true);
+            const res = await sendMessage({
+                contactId: selectedContact._id,
+                message: text,
+            });
+            if (res?.data) {
+                setMessages((prev) => {
+                    if (prev.some((m) => m._id === res.data._id)) return prev;
+                    return [...prev, res.data];
+                });
+            }
+        } catch (err) {
+            console.error("sendMessage failed:", err);
+            setDraft(text); // restore
+            setMessagesError(
+                err?.response?.data?.ErrorMessage || "Failed to send message"
             );
-        } catch {
-            setMessages((prev) => prev.map((m) => (m._id === optimistic._id ? { ...m, status: "failed" } : m)));
         } finally {
             setSending(false);
         }
@@ -136,188 +207,153 @@ export default function Chats() {
         }
     };
 
-    // mobile: only one pane visible at a time — list until a chat is opened,
-    // then the full-screen conversation with a Back button (native app pattern)
-    const showList = !isMobile || !selectedThread;
-    const showConversation = !isMobile || Boolean(selectedThread);
-
+    /* =========================================================
+       RENDER
+       ========================================================= */
     return (
         <AppLayout title="Chats">
-            <div className="cht-shell">
-                {showList && (
-                    <div className="cht-list-pane">
-                        <div className="cht-search">
-                            <Search size={15} />
-                            <input
-                                type="text"
-                                placeholder="Search contacts..."
-                                value={search}
-                                onChange={(e) => setSearch(e.target.value)}
-                            />
-                        </div>
+            <div className="chats-page">
+                {/* LEFT — Contact list */}
+                <aside className="chats-sidebar">
+                    <div className="chats-search">
+                        <Search size={16} />
+                        <input
+                            type="text"
+                            placeholder="Search contacts..."
+                            value={search}
+                            onChange={(e) => setSearch(e.target.value)}
+                        />
+                    </div>
 
-                        <div className="cht-filters">
-                            {FILTERS.map((f) => (
-                                <button
-                                    type="button"
-                                    key={f}
-                                    className={`cht-filter-chip ${filter === f ? "cht-filter-chip--active" : ""}`}
-                                    onClick={() => setFilter(f)}
+                    {contactsLoading && (
+                        <div className="chats-empty">
+                            <Loader2 className="spin" size={18} /> Loading contacts…
+                        </div>
+                    )}
+                    {contactsError && !contactsLoading && (
+                        <div className="chats-error">{contactsError}</div>
+                    )}
+                    {!contactsLoading && !contactsError && contacts.length === 0 && (
+                        <div className="chats-empty">No contacts yet.</div>
+                    )}
+
+                    <ul className="chats-list">
+                        {contacts.map((c) => {
+                            const active = selectedContact?._id === c._id;
+                            return (
+                                <li
+                                    key={c._id}
+                                    className={`chats-item ${active ? "active" : ""}`}
+                                    onClick={() => setSelectedContact(c)}
                                 >
-                                    {f}
-                                </button>
-                            ))}
-                        </div>
-
-                        <div className="cht-thread-list">
-                            {threadsLoading ? (
-                                <ThreadSkeleton />
-                            ) : threadsError ? (
-                                <div className="error-banner">{threadsError}</div>
-                            ) : filteredThreads.length === 0 ? (
-                                <div className="empty-state">No chats match here.</div>
-                            ) : (
-                                filteredThreads.map((t) => (
-                                    <button
-                                        type="button"
-                                        key={t._id}
-                                        className={`cht-thread ${selectedId === t._id ? "cht-thread--active" : ""}`}
-                                        onClick={() => openThread(t)}
-                                    >
-                                        <div className="cht-avatar">
-                                            {getInitials(t.name)}
-                                            {t.online && <span className="cht-online-dot" />}
+                                    <div className="chats-avatar">
+                                        {(c.name || "?").charAt(0).toUpperCase()}
+                                    </div>
+                                    <div className="chats-item-body">
+                                        <div className="chats-item-top">
+                                            <span className="chats-item-name">
+                                                {c.name || c.mobileNoWithCode || "Unknown"}
+                                            </span>
+                                            {c.lastMessageAt && (
+                                                <span className="chats-item-time">
+                                                    {new Date(c.lastMessageAt).toLocaleTimeString([], {
+                                                        hour: "2-digit",
+                                                        minute: "2-digit",
+                                                    })}
+                                                </span>
+                                            )}
                                         </div>
-                                        <div className="cht-thread-body">
-                                            <div className="cht-thread-top">
-                                                <span className="cht-thread-name">{t.name}</span>
-                                                <span className="cht-thread-time">{formatRelativeTime(t.lastMessageAt)}</span>
-                                            </div>
-                                            <p className="cht-thread-preview">{t.lastMessage}</p>
-                                            <div className="cht-thread-meta">
-                                                {t.unreadCount > 0 && <span className="cht-unread-badge">{t.unreadCount}</span>}
-                                                {t.tag && <span className={`cht-tag cht-tag--${t.tag.toLowerCase()}`}>{t.tag}</span>}
+                                        <div className="chats-item-preview">
+                                            {c.lastMessage?.message || c.mobileNoWithCode || "—"}
+                                        </div>
+                                    </div>
+                                </li>
+                            );
+                        })}
+                    </ul>
+                </aside>
+
+                {/* RIGHT — Chat window */}
+                <section className="chats-window">
+                    {!selectedContact ? (
+                        <div className="chats-placeholder">
+                            <MessageSquare size={42} />
+                            <p>Select a contact to start chatting</p>
+                        </div>
+                    ) : (
+                        <>
+                            {/* Header */}
+                            <header className="chats-header">
+                                <div className="chats-avatar">
+                                    {(selectedContact.name || "?").charAt(0).toUpperCase()}
+                                </div>
+                                <div>
+                                    <div className="chats-header-name">
+                                        {selectedContact.name || selectedContact.mobileNoWithCode}
+                                    </div>
+                                    <div className="chats-header-sub">
+                                        {selectedContact.mobileNoWithCode}
+                                    </div>
+                                </div>
+                            </header>
+
+                            {/* Messages */}
+                            <div className="chats-messages">
+                                {messagesLoading && (
+                                    <div className="chats-empty">
+                                        <Loader2 className="spin" size={18} /> Loading messages…
+                                    </div>
+                                )}
+                                {messagesError && (
+                                    <div className="chats-error">{messagesError}</div>
+                                )}
+                                {!messagesLoading && messages.length === 0 && !messagesError && (
+                                    <div className="chats-empty">No messages yet.</div>
+                                )}
+
+                                {messages.map((m) => {
+                                    const mine = m.sendBy === "system";
+                                    return (
+                                        <div
+                                            key={m._id}
+                                            className={`chats-bubble ${mine ? "mine" : "theirs"}`}
+                                        >
+                                            <div className="chats-bubble-text">{m.message}</div>
+                                            <div className="chats-bubble-time">
+                                                {m.createdAt
+                                                    ? new Date(m.createdAt).toLocaleTimeString([], {
+                                                        hour: "2-digit",
+                                                        minute: "2-digit",
+                                                    })
+                                                    : ""}
                                             </div>
                                         </div>
-                                    </button>
-                                ))
-                            )}
-                        </div>
-                    </div>
-                )}
-
-                {showConversation && (
-                    <div className="cht-convo-pane">
-                        {!selectedThread ? (
-                            <div className="cht-empty-convo">
-                                <p>Select a conversation to start chatting.</p>
+                                    );
+                                })}
+                                <div ref={messagesEndRef} />
                             </div>
-                        ) : (
-                            <>
-                                <div className="cht-convo-header">
-                                    {isMobile && (
-                                        <button type="button" className="cht-icon-btn" aria-label="Back" onClick={() => setSelectedId(null)}>
-                                            <ArrowLeft size={18} />
-                                        </button>
-                                    )}
-                                    <div className="cht-avatar cht-avatar--sm">{getInitials(selectedThread.name)}</div>
-                                    <div className="cht-convo-header-info">
-                                        <span className="cht-convo-name">{selectedThread.name}</span>
-                                        <span className="cht-convo-status">
-                                            {selectedThread.online ? "Online" : "Offline"}
-                                            {selectedThread.phone ? ` · ${selectedThread.phone}` : ""}
-                                        </span>
-                                    </div>
-                                    <div className="cht-convo-actions">
-                                        <button type="button" className="cht-icon-btn" aria-label="Call"><Phone size={16} /></button>
-                                        <button type="button" className="cht-icon-btn" aria-label="Video call"><Video size={16} /></button>
-                                        <button type="button" className="cht-icon-btn cht-hide-narrow" aria-label="Star"><Star size={16} /></button>
-                                        <button type="button" className="cht-icon-btn cht-hide-narrow" aria-label="Archive"><Archive size={16} /></button>
-                                        <button type="button" className="cht-icon-btn" aria-label="More"><MoreVertical size={16} /></button>
-                                    </div>
-                                </div>
 
-                                <div className="cht-messages" ref={scrollRef}>
-                                    {messagesLoading ? (
-                                        <div className="cht-messages-loading">Loading messages...</div>
-                                    ) : messages.length === 0 ? (
-                                        <div className="empty-state">No messages yet — say hello!</div>
-                                    ) : (
-                                        messages.map((m) => (
-                                            <div
-                                                key={m._id}
-                                                className={`cht-msg-row ${m.sender === "agent" ? "cht-msg-row--out" : "cht-msg-row--in"}`}
-                                            >
-                                                {m.sender !== "agent" && (
-                                                    <div className="cht-avatar cht-avatar--xs">{getInitials(selectedThread.name)}</div>
-                                                )}
-                                                <div className={`cht-bubble ${m.sender === "agent" ? "cht-bubble--out" : "cht-bubble--in"}`}>
-                                                    <span>{m.text}</span>
-                                                    <span className="cht-bubble-time">
-                                                        {formatMessageTime(m.timestamp)}
-                                                        {m.sender === "agent" && <CheckCheck size={13} />}
-                                                    </span>
-                                                </div>
-                                            </div>
-                                        ))
-                                    )}
-                                </div>
-
-                                <div className="cht-quick-replies">
-                                    {QUICK_REPLIES.map((q) => (
-                                        <button type="button" key={q} className="cht-quick-chip" onClick={() => setDraft(q)}>
-                                            {q}
-                                        </button>
-                                    ))}
-                                </div>
-
-                                <div className="cht-input-bar">
-                                    <button type="button" className="cht-icon-btn" aria-label="Emoji"><Smile size={18} /></button>
-                                    <button type="button" className="cht-icon-btn cht-hide-narrow" aria-label="Attach"><Paperclip size={18} /></button>
-                                    <button type="button" className="cht-icon-btn cht-hide-narrow" aria-label="Image"><ImageIcon size={18} /></button>
-                                    <button type="button" className="cht-icon-btn cht-hide-narrow" aria-label="Document"><FileText size={18} /></button>
-                                    <button type="button" className="cht-icon-btn cht-hide-narrow" aria-label="Location"><MapPin size={18} /></button>
-                                    <button type="button" className="cht-icon-btn cht-show-narrow" aria-label="Attach"><Paperclip size={18} /></button>
-                                    <input
-                                        className="cht-input"
-                                        type="text"
-                                        placeholder="Type a message..."
-                                        value={draft}
-                                        onChange={(e) => setDraft(e.target.value)}
-                                        onKeyDown={handleKeyDown}
-                                    />
-                                    <button type="button" className="cht-icon-btn" aria-label="Voice message"><Mic size={18} /></button>
-                                    <button
-                                        type="button"
-                                        className="cht-send-btn"
-                                        aria-label="Send"
-                                        onClick={handleSend}
-                                        disabled={!draft.trim() || sending}
-                                    >
-                                        <Send size={17} />
-                                    </button>
-                                </div>
-                            </>
-                        )}
-                    </div>
-                )}
+                            {/* Composer */}
+                            <footer className="chats-composer">
+                                <textarea
+                                    value={draft}
+                                    onChange={(e) => setDraft(e.target.value)}
+                                    onKeyDown={handleKeyDown}
+                                    placeholder="Type a message…"
+                                    rows={1}
+                                />
+                                <button
+                                    onClick={handleSend}
+                                    disabled={sending || !draft.trim()}
+                                    className="chats-send"
+                                >
+                                    {sending ? <Loader2 size={16} className="spin" /> : <Send size={16} />}
+                                </button>
+                            </footer>
+                        </>
+                    )}
+                </section>
             </div>
         </AppLayout>
-    );
-}
-
-function ThreadSkeleton() {
-    return (
-        <>
-            {Array.from({ length: 5 }).map((_, i) => (
-                <div key={i} className="cht-thread" style={{ cursor: "default" }}>
-                    <div className="skeleton" style={{ width: 44, height: 44, borderRadius: "50%", flexShrink: 0 }} />
-                    <div className="cht-thread-body">
-                        <div className="skeleton" style={{ width: "50%", height: 14, marginBottom: 8 }} />
-                        <div className="skeleton" style={{ width: "80%", height: 12 }} />
-                    </div>
-                </div>
-            ))}
-        </>
     );
 }

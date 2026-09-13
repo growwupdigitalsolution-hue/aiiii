@@ -1,419 +1,381 @@
 const mongoose = require("mongoose");
+const fs = require("fs");
+const ObjectId = mongoose.Types.ObjectId;
 const contactModel = require("../models/contact.model");
 const groupContactModel = require("../models/groupContact.model");
 const groupModel = require("../models/group.model");
 
-const ObjectId = mongoose.Types.ObjectId;
+const isValidId = (v) => v && mongoose.Types.ObjectId.isValid(String(v));
+const toId = (v) => new ObjectId(String(v));
+
+/* ---------- CSV parser (no external dependency) ----------
+   Expected columns (header row required):
+     name,mobileCode,mobileNo,email
+   Or just: name,mobileNo
+--------------------------------------------------------- */
+function parseCsv(text) {
+    const lines = text.split(/\r?\n/).filter((l) => l.trim().length > 0);
+    if (lines.length === 0) return [];
+
+    const header = lines[0].split(",").map((h) => h.trim().toLowerCase());
+    const idx = (key) => header.indexOf(key);
+
+    const rows = [];
+    for (let i = 1; i < lines.length; i++) {
+        const cols = lines[i].split(",").map((c) => c.trim());
+        const get = (key) => {
+            const j = idx(key);
+            return j >= 0 ? cols[j] || "" : "";
+        };
+        rows.push({
+            name: get("name"),
+            mobileCode: get("mobilecode") || get("mobile_code") || "+91",
+            mobileNo: get("mobileno") || get("mobile_no") || get("phone") || "",
+            email: get("email"),
+        });
+    }
+    return rows;
+}
 
 class Services {
-    async duplicatCheck(setData) {
+
+    /* =========================================================
+       CREATE single contact (optionally link to a group)
+       ========================================================= */
+    async createContact({ userId, groupId, data }) {
         try {
-            return await contactModel.countDocuments({
-                mobileCode: setData.mobileCode,
-                mobileNo: setData.mobileNo,
-                userId: new ObjectId(setData.userId),
-                isDelete: 0
+            if (!isValidId(userId)) return { error: "Invalid user" };
+            if (!data?.mobileNo) return { error: "mobileNo is required" };
+
+            const mobileCode = data.mobileCode || "+91";
+            const cleanNo = String(data.mobileNo).replace(/\D/g, "");
+            const mobileNoWithCode = `${mobileCode}${cleanNo}`;
+
+            let contact = await contactModel.findOne({
+                createdby: toId(userId),
+                mobileNoWithCode,
+                isDelete: { $ne: 1 },
             });
-        } catch (error) {
-            console.error("duplicatCheck error:", error);
-            return 0;
-        }
-    }
 
-    async create(setData) {
-        try {
-            return await contactModel.insertMany(setData);
-        } catch (error) {
-            console.error("create error:", error);
-            return false;
-        }
-    }
-
-    async getAll(setData) {
-        try {
-            const whereObject = {
-                userId: new ObjectId(setData.id),
-                isDelete: 0
-            };
-
-            if (setData.name) {
-                whereObject.name = {
-                    $regex: new RegExp(setData.name, "i")
-                };
-            }
-
-            const [count, data] = await Promise.all([
-                contactModel.countDocuments(whereObject),
-                contactModel.find(whereObject)
-                    .skip(Number(setData.skip) || 0)
-                    .limit(Number(setData.limit) || 10)
-                    .sort({ _id: -1 })
-            ]);
-
-            return { count, data };
-        } catch (error) {
-            console.error("getAll error:", error);
-            return false;
-        }
-    }
-
-    async getById(id) {
-        try {
-            if (!ObjectId.isValid(id)) return false;
-
-            return await contactModel.findOne({
-                _id: new ObjectId(id),
-                isDelete: 0
-            });
-        } catch (error) {
-            console.error("getById error:", error);
-            return false;
-        }
-    }
-
-    async update(id, setData) {
-        try {
-            if (!ObjectId.isValid(id)) return false;
-
-            return await contactModel.findOneAndUpdate(
-                {
-                    _id: new ObjectId(id),
-                    isDelete: 0
-                },
-                {
-                    $set: setData
-                },
-                {
-                    new: true,
-                    runValidators: true
-                }
-            );
-        } catch (error) {
-            console.error("update error:", error);
-            return false;
-        }
-    }
-
-    async delete(id) {
-        try {
-            if (!ObjectId.isValid(id)) return false;
-
-            return await contactModel.findOneAndUpdate(
-                {
-                    _id: new ObjectId(id),
-                    isDelete: 0
-                },
-                {
-                    $set: { isDelete: 1 }
-                },
-                {
-                    new: true
-                }
-            );
-        } catch (error) {
-            console.error("delete error:", error);
-            return false;
-        }
-    }
-
-    async activedeactive(id, setData) {
-        try {
-            if (!ObjectId.isValid(id)) return false;
-
-            return await contactModel.findOneAndUpdate(
-                {
-                    _id: new ObjectId(id),
-                    isDelete: 0
-                },
-                {
-                    $set: setData
-                },
-                {
-                    new: true,
-                    runValidators: true
-                }
-            );
-        } catch (error) {
-            console.error("activedeactive error:", error);
-            return false;
-        }
-    }
-
-    async getAllActiveModel() {
-        try {
-            return await contactModel.find({
-                isActive: 1,
-                isDelete: 0
-            }).sort({ _id: -1 });
-        } catch (error) {
-            console.error("getAllActiveModel error:", error);
-            return false;
-        }
-    }
-
-    async getUserCount(setData) {
-        try {
-            const whereObject = {
-                isDelete: 0
-            };
-
-            if (setData.isAdminId == 1) {
-                whereObject.createdBy = new ObjectId(setData.createdBy);
-            } else {
-                whereObject.createdBy = {
-                    $ne: new ObjectId(setData.createdBy)
-                };
-            }
-
-            return await contactModel.countDocuments(whereObject);
-        } catch (error) {
-            console.error("getUserCount error:", error);
-            return 0;
-        }
-    }
-
-    async getContactDetails(setData) {
-        try {
-            return await contactModel.find({
-                mobileCode: setData.mobileCode,
-                mobileNo: setData.mobileNo,
-                userId: new ObjectId(setData.userId),
-                isDelete: 0
-            });
-        } catch (error) {
-            console.error("getContactDetails error:", error);
-            return [];
-        }
-    }
-
-    async createGroupContact(contactObject) {
-        try {
-            return await groupContactModel.insertMany(contactObject);
-        } catch (error) {
-            console.error("createGroupContact error:", error);
-            return false;
-        }
-    }
-
-    async countGroupContact(id) {
-        try {
-            if (!ObjectId.isValid(id)) return 0;
-
-            return await groupContactModel.countDocuments({
-                groupId: new ObjectId(id),
-                isdeleted: 0
-            });
-        } catch (error) {
-            console.error("countGroupContact error:", error);
-            return 0;
-        }
-    }
-
-    async getAllGroupContact(setData) {
-        try {
-            if (!ObjectId.isValid(setData.userId)) return false;
-
-            const match = {
-                userId: new ObjectId(setData.userId),
-                isdeleted: 0
-            };
-
-            if (setData.groupId) {
-                if (!ObjectId.isValid(setData.groupId)) return false;
-                match.groupId = new ObjectId(setData.groupId);
-            }
-
-            const contactMatch = {};
-
-            if (setData.name) {
-                contactMatch["contact.name"] = {
-                    $regex: setData.name.trim(),
-                    $options: "i"
-                };
-            }
-
-            if (setData.mobileNo) {
-                contactMatch["contact.mobileNo"] = {
-                    $regex: setData.mobileNo.trim(),
-                    $options: "i"
-                };
-            }
-
-            if (setData.mobileCode) {
-                contactMatch["contact.mobileCode"] = {
-                    $regex: setData.mobileCode.trim(),
-                    $options: "i"
-                };
-            }
-
-            const skip = Math.max(Number(setData.skip) || 0, 0);
-            const limit = Math.max(Number(setData.limit) || 10, 1);
-
-            const pipeline = [
-                { $match: match },
-                {
-                    $lookup: {
-                        from: "contacts",
-                        localField: "contactId",
-                        foreignField: "_id",
-                        as: "contact"
-                    }
-                },
-                {
-                    $unwind: {
-                        path: "$contact",
-                        preserveNullAndEmptyArrays: false
-                    }
-                }
-            ];
-
-            if (Object.keys(contactMatch).length > 0) {
-                pipeline.push({
-                    $match: contactMatch
+            if (!contact) {
+                contact = await contactModel.create({
+                    name: data.name || mobileNoWithCode,
+                    mobileCode,
+                    mobileNo: cleanNo,
+                    mobileNoWithCode,
+                    email: data.email || "",
+                    createdby: toId(userId),
+                    isActive: 1,
+                    isDelete: 0,
                 });
             }
 
-            pipeline.push(
-                {
-                    $facet: {
-                        data: [
-                            { $sort: { _id: -1 } },
-                            { $skip: skip },
-                            { $limit: limit },
-                            {
-                                $project: {
-                                    _id: 1,
-                                    groupId: 1,
-                                    contactId: 1,
-                                    userId: 1,
-                                    createdAt: 1,
-                                    contact: {
-                                        _id: "$contact._id",
-                                        name: "$contact.name",
-                                        mobileNo: "$contact.mobileNo",
-                                        mobileCode: "$contact.mobileCode",
-                                        mobileNoWithCode: "$contact.mobileNoWithCode"
-                                    }
-                                }
-                            }
-                        ],
-                        count: [
-                            { $count: "total" }
-                        ]
-                    }
-                }
-            );
-
-            const result = await groupContactModel.aggregate(pipeline);
-
-            return {
-                count: result[0]?.count[0]?.total || 0,
-                data: result[0]?.data || []
-            };
-        } catch (error) {
-            console.error("getAllGroupContact error:", error);
-            return false;
-        }
-    }
-
-    async getDuplicateGroupContact(setData) {
-        try {
-            if (!ObjectId.isValid(setData.groupId) || !ObjectId.isValid(setData.contactId)) {
-                return { count: 0 };
+            // Optional: link to group
+            if (groupId && isValidId(groupId)) {
+                await this._linkContactToGroup({
+                    groupId: toId(groupId),
+                    contactId: contact._id,
+                    userId: toId(userId),
+                });
             }
 
-            const count = await groupContactModel.countDocuments({
-                groupId: new ObjectId(setData.groupId),
-                contactId: new ObjectId(setData.contactId),
-                isdeleted: 0
+            return contact;
+        } catch (err) {
+            console.error("contactService.createContact error:", err);
+            return { error: "Failed to create contact" };
+        }
+    }
+
+    /* =========================================================
+       BULK create from CSV
+       ========================================================= */
+    async bulkCreateFromCsv({ userId, groupId, filePath }) {
+        try {
+            if (!isValidId(userId)) return { error: "Invalid user" };
+
+            const text = fs.readFileSync(filePath, "utf8");
+            const rows = parseCsv(text);
+            if (rows.length === 0) return { error: "CSV is empty or malformed" };
+
+            let created = 0;
+            let skipped = 0;
+
+            for (const row of rows) {
+                if (!row.mobileNo) { skipped++; continue; }
+
+                const mobileCode = row.mobileCode || "+91";
+                const cleanNo = String(row.mobileNo).replace(/\D/g, "");
+                const mobileNoWithCode = `${mobileCode}${cleanNo}`;
+
+                let contact = await contactModel.findOne({
+                    createdby: toId(userId),
+                    mobileNoWithCode,
+                    isDelete: { $ne: 1 },
+                });
+
+                if (!contact) {
+                    contact = await contactModel.create({
+                        name: row.name || mobileNoWithCode,
+                        mobileCode,
+                        mobileNo: cleanNo,
+                        mobileNoWithCode,
+                        email: row.email || "",
+                        createdby: toId(userId),
+                        isActive: 1,
+                        isDelete: 0,
+                    });
+                    created++;
+                } else {
+                    skipped++;
+                }
+
+                if (groupId && isValidId(groupId)) {
+                    await this._linkContactToGroup({
+                        groupId: toId(groupId),
+                        contactId: contact._id,
+                        userId: toId(userId),
+                    });
+                }
+            }
+
+            // Cleanup uploaded file
+            try { fs.unlinkSync(filePath); } catch (_) { }
+
+            return { created, skipped };
+        } catch (err) {
+            console.error("contactService.bulkCreateFromCsv error:", err);
+            return { error: "Failed to process CSV" };
+        }
+    }
+
+    /* =========================================================
+       GET ALL contacts (of user, or of a group)
+       Sorted by latest message activity
+       ========================================================= */
+    async getAllContacts({ userId, groupId, limit = 50, skip = 0, search = "" }) {
+        try {
+            if (!isValidId(userId)) return { count: 0, data: [] };
+
+            // ---- Group-scoped ----
+            if (groupId && isValidId(groupId)) {
+                const matchContact = { isDelete: { $ne: 1 } };
+                if (search?.trim()) {
+                    matchContact.name = { $regex: new RegExp(search.trim(), "i") };
+                }
+
+                const [count, data] = await Promise.all([
+                    groupContactModel.countDocuments({ groupId: toId(groupId) }),
+                    groupContactModel.aggregate([
+                        { $match: { groupId: toId(groupId) } },
+                        {
+                            $lookup: {
+                                from: "contacts",
+                                localField: "contactId",
+                                foreignField: "_id",
+                                as: "contact",
+                            },
+                        },
+                        { $unwind: "$contact" },
+                        { $match: { "contact.isDelete": { $ne: 1 } } },
+                        ...(search?.trim()
+                            ? [{ $match: { "contact.name": { $regex: new RegExp(search.trim(), "i") } } }]
+                            : []),
+                        {
+                            $project: {
+                                _id: "$contact._id",
+                                name: "$contact.name",
+                                mobileCode: "$contact.mobileCode",
+                                mobileNo: "$contact.mobileNo",
+                                mobileNoWithCode: "$contact.mobileNoWithCode",
+                                email: "$contact.email",
+                                createdAt: "$contact.createdAt",
+                            },
+                        },
+                        { $sort: { name: 1 } },
+                        { $skip: +skip },
+                        { $limit: +limit },
+                    ]),
+                ]);
+
+                return { count, data };
+            }
+
+            // ---- All contacts of the user ----
+            const match = {
+                createdby: toId(userId),
+                isDelete: { $ne: 1 },
+            };
+            if (search?.trim()) {
+                match.name = { $regex: new RegExp(search.trim(), "i") };
+            }
+
+            const [count, data] = await Promise.all([
+                contactModel.countDocuments(match),
+                contactModel.aggregate([
+                    { $match: match },
+                    {
+                        $lookup: {
+                            from: "messages",
+                            let: { cid: "$_id" },
+                            pipeline: [
+                                { $match: { $expr: { $eq: ["$contactId", "$$cid"] } } },
+                                { $sort: { createdAt: -1 } },
+                                { $limit: 1 },
+                                { $project: { message: 1, createdAt: 1, sendBy: 1 } },
+                            ],
+                            as: "lastMessage",
+                        },
+                    },
+                    { $addFields: { lastMessage: { $arrayElemAt: ["$lastMessage", 0] } } },
+                    {
+                        $addFields: {
+                            lastMessageAt: { $ifNull: ["$lastMessage.createdAt", "$createdAt"] },
+                        },
+                    },
+                    { $sort: { lastMessageAt: -1 } },
+                    { $skip: +skip },
+                    { $limit: +limit },
+                    {
+                        $project: {
+                            _id: 1,
+                            name: 1,
+                            mobileCode: 1,
+                            mobileNo: 1,
+                            mobileNoWithCode: 1,
+                            email: 1,
+                            createdAt: 1,
+                            lastMessageAt: 1,
+                            lastMessage: 1,
+                        },
+                    },
+                ]),
+            ]);
+
+            return { count, data };
+        } catch (err) {
+            console.error("contactService.getAllContacts error:", err);
+            return { count: 0, data: [] };
+        }
+    }
+
+    /* =========================================================
+       GET single contact
+       ========================================================= */
+    async getContactById({ userId, contactId }) {
+        try {
+            if (!isValidId(userId) || !isValidId(contactId)) return null;
+            return await contactModel.findOne({
+                _id: toId(contactId),
+                createdby: toId(userId),
+                isDelete: { $ne: 1 },
             });
-
-            return { count };
-        } catch (error) {
-            console.error("getDuplicateGroupContact error:", error);
-            return { count: 0 };
+        } catch (err) {
+            console.error("contactService.getContactById error:", err);
+            return null;
         }
     }
 
-    async updateGroupContact(id, setData) {
+    /* =========================================================
+       UPDATE contact
+       ========================================================= */
+    async updateContact({ userId, contactId, data }) {
         try {
-            if (!ObjectId.isValid(id)) return false;
+            if (!isValidId(userId) || !isValidId(contactId)) {
+                return { error: "Invalid id" };
+            }
 
-            return await groupContactModel.findOneAndUpdate(
-                {
-                    _id: new ObjectId(id),
-                    isdeleted: 0
-                },
-                {
-                    $set: setData
-                },
-                {
-                    new: true,
-                    runValidators: true
-                }
+            const update = {};
+            if (data.name !== undefined) update.name = data.name;
+            if (data.email !== undefined) update.email = data.email;
+            if (data.mobileCode !== undefined) update.mobileCode = data.mobileCode;
+            if (data.mobileNo !== undefined) {
+                const clean = String(data.mobileNo).replace(/\D/g, "");
+                update.mobileNo = clean;
+                update.mobileNoWithCode = `${data.mobileCode || "+91"}${clean}`;
+            }
+
+            const result = await contactModel.findOneAndUpdate(
+                { _id: toId(contactId), createdby: toId(userId), isDelete: { $ne: 1 } },
+                { $set: update },
+                { new: true }
             );
-        } catch (error) {
-            console.error("updateGroupContact error:", error);
-            return false;
+            return result || { error: "Contact not found" };
+        } catch (err) {
+            console.error("contactService.updateContact error:", err);
+            return { error: "Failed to update contact" };
         }
     }
 
-    async deleteGroupContact(id) {
+    /* =========================================================
+       SOFT delete contact + unlink from any groups
+       ========================================================= */
+    async deleteContact({ userId, contactId }) {
         try {
-            if (!ObjectId.isValid(id)) return false;
+            if (!isValidId(userId) || !isValidId(contactId)) {
+                return { error: "Invalid id" };
+            }
 
-            const groupContact = await groupContactModel.findOneAndUpdate(
-                {
-                    _id: new ObjectId(id),
-                    isdeleted: 0
-                },
-                {
-                    $set: { isdeleted: 1 }
-                },
-                {
-                    new: true
-                }
+            const contact = await contactModel.findOneAndUpdate(
+                { _id: toId(contactId), createdby: toId(userId), isDelete: { $ne: 1 } },
+                { $set: { isDelete: 1, isActive: 0 } },
+                { new: true }
             );
+            if (!contact) return { error: "Contact not found" };
 
-            if (!groupContact) return false;
+            // Unlink from any groups
+            await groupContactModel.deleteMany({ contactId: toId(contactId) });
 
-            await groupModel.findOneAndUpdate(
-                {
-                    _id: groupContact.groupId
-                },
-                {
-                    $inc: {
-                        totalContact: -1
-                    }
-                },
-                {
-                    new: true
-                }
-            );
-
-            return groupContact;
-        } catch (error) {
-            console.error("deleteGroupContact error:", error);
-            return false;
+            return contact;
+        } catch (err) {
+            console.error("contactService.deleteContact error:", err);
+            return { error: "Failed to delete contact" };
         }
     }
 
-    async getDataByCondition(getData) {
+    /* =========================================================
+       DELETE a group-contact LINK only
+       (the contact itself is preserved)
+       ========================================================= */
+    async deleteGroupContact({ userId, id }) {
         try {
-            return await contactModel.find(getData);
-        } catch (error) {
-            console.error("getDataByCondition error:", error);
-            return false;
+            if (!isValidId(userId) || !isValidId(id)) {
+                return { error: "Invalid id" };
+            }
+
+            // `id` might be either the link doc _id OR the contactId inside a group.
+            // Try as link first, fall back to contactId.
+            let link = await groupContactModel.findById(id);
+            if (!link) {
+                link = await groupContactModel.findOne({ contactId: toId(id) });
+            }
+            if (!link) return { error: "Group-contact link not found" };
+
+            // Make sure the caller owns the group
+            const group = await groupModel.findOne({
+                _id: link.groupId,
+                createdby: toId(userId),
+            });
+            if (!group) return { error: "Not authorized" };
+
+            await groupContactModel.deleteOne({ _id: link._id });
+
+            const total = await groupContactModel.countDocuments({ groupId: link.groupId });
+            await groupModel.findByIdAndUpdate(link.groupId, { totalContact: total });
+
+            return { removed: true, groupId: link.groupId, totalContact: total };
+        } catch (err) {
+            console.error("contactService.deleteGroupContact error:", err);
+            return { error: "Failed to delete group contact" };
         }
     }
 
-    async insertData(getData) {
-        try {
-            return await contactModel.create(getData);
-        } catch (error) {
-            console.error("insertData error:", error);
-            return false;
-        }
+    /* =========================================================
+       INTERNAL: link contact to group (idempotent)
+       ========================================================= */
+    async _linkContactToGroup({ groupId, contactId, userId }) {
+        const exists = await groupContactModel.findOne({ groupId, contactId });
+        if (exists) return exists;
+        return await groupContactModel.create({ groupId, contactId, createdby: userId });
     }
 }
 
