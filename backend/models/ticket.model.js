@@ -8,7 +8,11 @@ const ticketSchema = new mongoose.Schema(
         groupId: { type: Schema.Types.ObjectId, ref: "groups", default: null },
         lastMessageId: { type: Schema.Types.ObjectId, ref: "messages" },
         lastMessageAt: { type: Date, default: null },
-
+        ticketType: {
+            type: String,
+            enum: ["urgent", "high", "medium", "low"],
+            default: "all",
+        },
         ticketstatus: {
             type: String,
             enum: ["pending", "inProgress", "closed"],

@@ -7,11 +7,6 @@ import "./tickets.css";
 
 const COLUMNS = [
     { key: "new", label: "New", dot: "#2563eb" },
-    { key: "open", label: "Open", dot: "#f97316" },
-    { key: "assigned", label: "Assigned", dot: "#7c3aed" },
-    { key: "in_progress", label: "In Progress", dot: "#0d9488" },
-    { key: "follow_up", label: "Follow Up", dot: "#db2777" },
-    { key: "waiting", label: "Waiting", dot: "#6b7280" },
 ];
 
 const PRIORITIES = ["All", "Urgent", "High", "Medium", "Low"];
@@ -151,6 +146,17 @@ export default function Tickets() {
                     since all six columns can't sit side by side on a small screen */}
                 <div className="tkt-column-tabs">
                     {COLUMNS.map((col) => (
+                        <button
+                            key={col.key}
+                            className="tkt-column-tab"
+                            onClick={() => columnRefs.current[col.key]?.scrollIntoView({ behavior: "smooth", inline: "start", block: "nearest" })}
+                        >
+                            <span className="tkt-dot" style={{ background: col.dot }} />
+                            {col.label}
+                            <span className="tkt-count">{ticketsByColumn(col.key).length}</span>
+                        </button>
+                    ))}
+                    {group.map((col) => (
                         <button
                             key={col.key}
                             className="tkt-column-tab"

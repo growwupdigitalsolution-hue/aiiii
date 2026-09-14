@@ -90,7 +90,7 @@ class Services {
         pipeline.push(
             {
                 $project: {
-                    _id: 1, ticketNumber: 1, ticketstatus: 1, unReadCount: 1,
+                    _id: 1, ticketNumber: 1, ticketType: 1, unReadCount: 1,
                     lastMessageAt: 1, createdAt: 1,
                     contact: { _id: "$contact._id", name: "$contact.name", mobileNoWithCode: "$contact.mobileNoWithCode" },
                     messages: { _id: "$messages._id", message: "$messages.message", createdAt: "$messages.createdAt" },
