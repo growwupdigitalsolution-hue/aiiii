@@ -11,7 +11,7 @@ router.put("/update-contact/:id", helper.verifyToken, controller.update);
 router.delete("/delete-contact", helper.verifyToken, controller.delete);
 router.delete("/delete-group-contact/:id", helper.verifyToken, controller.deleteGroupContact);
 // Aliases so older frontend paths still work
-router.get("/contacts", helper.verifyToken, controller.getAllGroupContact);
+router.get("/contacts", helper.verifyToken, controller.getAllContact);
 router.get("/contacts/:id", helper.verifyToken, controller.getById);
 
 module.exports = router;

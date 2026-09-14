@@ -21,7 +21,7 @@ class Controller {
 
             const result = await messageService.getMessagesByContact({
                 contactId,
-                createdby: req.user._id,
+                userId: req.user._id,
                 limit,
                 skip,
             });
@@ -56,7 +56,7 @@ class Controller {
             // Verify contact belongs to this user
             const contact = await contactModel.findOne({
                 _id: new ObjectId(String(contactId)),
-                createdby: new ObjectId(String(userId)),
+                userId: new ObjectId(String(userId)),
                 isDelete: { $ne: 1 },
             });
             if (!contact) {
@@ -65,7 +65,7 @@ class Controller {
 
             const result = await messageService.createAndUpsertTicket({
                 contactId,
-                createdby: userId,
+                userId: userId,
                 sendBy: "system",       // outgoing
                 msgType,
                 message: String(message).trim(),
@@ -151,6 +151,29 @@ class Controller {
             });
         } catch (err) {
             console.error("message.incoming error:", err);
+            return res.status(500).json({ ErrorMessage: "Internal Server Error", data: {} });
+        }
+    }
+    async chatList(req, res) {
+        try {
+            const { limit = 10, skip = 0 } = req.query;
+            const userId = req.user._id;
+
+
+
+            const result = await messageService.getChatList({
+                userId: req.user._id,
+                limit,
+                skip,
+            });
+
+            return res.status(200).json({
+                ErrorMessage: "success",
+                data: result.messages || [],
+                countData: result.count || 0,
+            });
+        } catch (err) {
+            console.error("message.getByContact error:", err);
             return res.status(500).json({ ErrorMessage: "Internal Server Error", data: {} });
         }
     }

@@ -152,7 +152,7 @@ class Services {
        GET ALL contacts (of user, or of a group)
        Sorted by latest message activity
        ========================================================= */
-    async getAllContacts({ userId, groupId, limit = 50, skip = 0, search = "" }) {
+    async getAllGroupContacts({ userId, groupId, limit = 50, skip = 0, search = "" }) {
         try {
             if (!isValidId(userId)) return { count: 0, data: [] };
 
@@ -252,6 +252,25 @@ class Services {
             ]);
 
             return { count, data };
+        } catch (err) {
+            console.error("contactService.getAllContacts error:", err);
+            return { count: 0, data: [] };
+        }
+    }
+    async getAllContacts({ userId, limit = 50, skip = 0, search = "" }) {
+        try {
+            if (!isValidId(userId)) return { count: 0, data: [] };
+            if (search?.trim()) {
+                const match = {
+                    userId: userId,
+                    name: { $regex: search.trim(), $options: "i" },
+                    mobileNo: { $regex: search.trim(), $options: "i" },
+                };
+            }
+            let data = await contactModel.find(match).limit(+limit).skip(+skip).populate("groupId", "name").sort({ createdAt: -1 });
+            let totalCount = await contactModel.countDocuments(match);
+
+            return { count: totalCount, data };
         } catch (err) {
             console.error("contactService.getAllContacts error:", err);
             return { count: 0, data: [] };

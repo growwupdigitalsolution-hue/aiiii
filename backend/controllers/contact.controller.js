@@ -72,7 +72,7 @@ class Controller {
             const userId = req.user._id;
             const { groupId, limit = 50, skip = 0, search = "" } = req.query;
 
-            const result = await contactService.getAllContacts({
+            const result = await contactService.getAllGroupContacts({
                 userId,
                 groupId: groupId || null,
                 limit,
@@ -91,6 +91,28 @@ class Controller {
         }
     }
 
+    async getAllContact(req, res) {
+        try {
+            const userId = req.user._id;
+            const { groupId, limit = 50, skip = 0, search = "" } = req.query;
+
+            const result = await contactService.getAllContacts({
+                userId,
+                limit,
+                skip,
+                search,
+            });
+
+            return res.status(200).json({
+                ErrorMessage: "success",
+                data: result.data,
+                countData: result.count,
+            });
+        } catch (err) {
+            console.error("contact.getAllGroupContact error:", err);
+            return res.status(500).json({ ErrorMessage: "Internal Server Error", data: {} });
+        }
+    }
     /* =========================================================
        GET /get-contactbyid
        Query: ?id=...

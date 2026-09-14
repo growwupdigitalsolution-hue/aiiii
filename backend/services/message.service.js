@@ -46,7 +46,7 @@ const createAndUpsertTicket = async (getData) => {
     try {
         const message = await messageModel.create({
             contactId: getData.contactId,
-            createdby: getData.createdby,
+            userId: getData.createdby,
             sendBy: getData.sendBy || "customer",
             msgType: getData.msgType || "text",
             message: getData.message || "",
@@ -64,7 +64,7 @@ const createAndUpsertTicket = async (getData) => {
         if (getData.sendBy === "customer") {
             ticket = await ticketService.create({
                 contactId: getData.contactId,
-                createdby: getData.createdby,
+                userId: getData.userId,
                 lastMessageId: message._id,
                 _metaTimestamp: getData._metaTimestamp,
             });
@@ -76,6 +76,59 @@ const createAndUpsertTicket = async (getData) => {
         return { message: null, ticket: null };
     }
 }
+const getChatList = async ({ userId, limit = 10, skip = 0 }) => {
+    const pipeline = [
+        { $match: { userId: new ObjectId(userId), isdeleted: false } },
+        {
+            $lookup: {
+                from: "messages",
+                localField: "lastMessageId",
+                foreignField: "_id",
+                as: "lastMessage"
+            }
+        },
+        { $unwind: { path: "$lastMessage", preserveNullAndEmptyArrays: true } },
+        {
+            $lookup: {
+                from: "contacts",
+                localField: "contactId",
+                foreignField: "_id",
+                as: "contact"
+            }
+        },
+        { $unwind: { path: "$contact", preserveNullAndEmptyArrays: true } },
+        {
+            $project: {
+                _id: 1,
+                ticketNumber: 1,
+                ticketstatus: 1,
+                unReadCount: 1,
+                lastMessageAt: 1,
+                createdAt: 1,
+                lastMessage: {
+                    _id: "$lastMessage._id",
+                    message: "$lastMessage.message",
+                    msgType: "$lastMessage.msgType",
+                    createdAt: "$lastMessage.createdAt"
+                },
+                contact: {
+                    _id: "$contact._id",
+                    name: "$contact.name",
+                    mobileNoWithCode: "$contact.mobileNoWithCode"
+                }
+            }
+        },
+        { $sort: { lastMessageAt: -1, createdAt: -1 } },
+        { $skip: skip },
+        { $limit: limit }
+    ];
+    try {
+        return await ticketModel.aggregate(pipeline);
+    } catch (err) {
+        console.error("[message.service] getChatList error:", err);
+        return false;
+    }
+};
 
 const softDeleteMessage = async (messageId) =>
     messageModel.findOneAndUpdate({ _id: messageId }, { isDelete: true });

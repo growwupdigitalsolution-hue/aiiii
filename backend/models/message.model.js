@@ -7,7 +7,7 @@ const messageSchema = new mongoose.Schema({
         type: Schema.Types.ObjectId,
         ref: "contacts"
     },
-    createdby: {
+    userId: {
         type: Schema.Types.ObjectId,
         ref: "users"
     },

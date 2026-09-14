@@ -3,12 +3,10 @@ const Schema = mongoose.Schema;
 
 const ticketSchema = new mongoose.Schema(
     {
-        createdby: { type: Schema.Types.ObjectId, ref: "users" },
+        userId: { type: Schema.Types.ObjectId, ref: "users" },
         contactId: { type: Schema.Types.ObjectId, ref: "contacts" },
         groupId: { type: Schema.Types.ObjectId, ref: "groups", default: null },
         lastMessageId: { type: Schema.Types.ObjectId, ref: "messages" },
-
-        // NEW: latest message timestamp — used for sorting ticket lists
         lastMessageAt: { type: Date, default: null },
 
         ticketstatus: {
@@ -28,10 +26,8 @@ const ticketSchema = new mongoose.Schema(
     { timestamps: true }
 );
 
-// Indexes for fast sorting & filtering
-ticketSchema.index({ createdby: 1, ticketstatus: 1, lastMessageAt: -1 });
+ticketSchema.index({ userId: 1, ticketstatus: 1, lastMessageAt: -1 });
 ticketSchema.index({ groupId: 1, lastMessageAt: -1 });
 ticketSchema.index({ contactId: 1, ticketstatus: 1 });
 
-const ticket = mongoose.model("tickets", ticketSchema);
-module.exports = ticket;
+module.exports = mongoose.model("tickets", ticketSchema);
