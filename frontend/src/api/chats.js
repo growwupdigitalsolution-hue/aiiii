@@ -9,11 +9,10 @@ import apiClient from "./client";
  * Query: ?groupId=&limit=&skip=&search=
  * Response: { ErrorMessage, data: [...], countData }
  */
-export async function listContacts({ groupId, limit = 100, skip = 0, search = "" } = {}) {
+export async function chatlist({ limit = 100, skip = 0, search = "" } = {}) {
     const params = { limit, skip, search };
-    if (groupId) params.groupId = groupId;
 
-    const { data } = await apiClient.get("/getall-group-contact", { params });
+    const { data } = await apiClient.get("/chat-list", { params });
     return data;
 }
 

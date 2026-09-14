@@ -99,7 +99,7 @@ class Controller {
         try {
             const {
                 contactId,
-                createdby,
+                userId,
                 message,
                 sendBy = "customer",
                 msgType = "text",
@@ -107,7 +107,7 @@ class Controller {
                 interactiveReply,
             } = req.body || {};
 
-            if (!contactId || !createdby) {
+            if (!contactId || !userId) {
                 return res.status(400).json({
                     ErrorMessage: "contactId and createdby are required",
                     data: {},
@@ -116,7 +116,7 @@ class Controller {
 
             const result = await messageService.createAndUpsertTicket({
                 contactId,
-                createdby,
+                userId,
                 message,
                 sendBy,
                 msgType,
@@ -169,8 +169,8 @@ class Controller {
 
             return res.status(200).json({
                 ErrorMessage: "success",
-                data: result.messages || [],
-                countData: result.count || 0,
+                data: result || [],
+                // countData: result.count || 0,
             });
         } catch (err) {
             console.error("message.getByContact error:", err);

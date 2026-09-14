@@ -1,6 +1,9 @@
 // services/message.service.js
+const mongoose = require("mongoose");
+const ObjectId = mongoose.Types.ObjectId;
 const messageModel = require("../models/message.model");
 const ticketService = require("./ticket.service");
+
 const saveMessageRecord = async (data) => messageModel.create(data);
 
 const updateMessageRecord = async (messageId, data) =>
@@ -12,6 +15,9 @@ const updateMessageByWhatsAppId = async (whatsAppMessageId, data) =>
 
 const findByMessageId = async (messageId) =>
     messageModel.findOne({ _id: messageId, isDelete: false });
+
+const softDeleteMessage = async (messageId) =>
+    messageModel.findOneAndUpdate({ _id: messageId }, { isDelete: true });
 
 // Chat window - ek contact ke saare messages, purane se naye order me
 const findMessagesByContactId = async (contactId, { skip = 0, limit = 50 } = {}) =>
@@ -46,7 +52,7 @@ const createAndUpsertTicket = async (getData) => {
     try {
         const message = await messageModel.create({
             contactId: getData.contactId,
-            userId: getData.createdby,
+            userId: getData.userId,
             sendBy: getData.sendBy || "customer",
             msgType: getData.msgType || "text",
             message: getData.message || "",
@@ -77,21 +83,39 @@ const createAndUpsertTicket = async (getData) => {
     }
 }
 const getChatList = async ({ userId, limit = 10, skip = 0 }) => {
+    limit = Number(limit) || 10;
+    skip = Number(skip) || 0;
+
     const pipeline = [
-        { $match: { userId: new ObjectId(userId), isdeleted: false } },
+        { $match: { userId: new ObjectId(userId), isDelete: false } },
+        { $sort: { createdAt: -1 } },
         {
-            $lookup: {
-                from: "messages",
-                localField: "lastMessageId",
-                foreignField: "_id",
-                as: "lastMessage"
+            $group: {
+                _id: "$contactId",
+                lastMessage: { $first: "$$ROOT" },
+                unreadCount: {
+                    $sum: {
+                        $cond: [
+                            {
+                                $and: [
+                                    { $eq: ["$isRead", 0] },
+                                    { $eq: ["$sendBy", "customer"] }
+                                ]
+                            },
+                            1,
+                            0
+                        ]
+                    }
+                }
             }
         },
-        { $unwind: { path: "$lastMessage", preserveNullAndEmptyArrays: true } },
+        { $sort: { "lastMessage.createdAt": -1 } },
+        { $skip: skip },
+        { $limit: limit },
         {
             $lookup: {
                 from: "contacts",
-                localField: "contactId",
+                localField: "_id",
                 foreignField: "_id",
                 as: "contact"
             }
@@ -99,39 +123,34 @@ const getChatList = async ({ userId, limit = 10, skip = 0 }) => {
         { $unwind: { path: "$contact", preserveNullAndEmptyArrays: true } },
         {
             $project: {
-                _id: 1,
-                ticketNumber: 1,
-                ticketstatus: 1,
-                unReadCount: 1,
-                lastMessageAt: 1,
-                createdAt: 1,
+                _id: 0,
+                contactId: "$_id",
+                contact: 1,
+                unreadCount: 1,
                 lastMessage: {
                     _id: "$lastMessage._id",
                     message: "$lastMessage.message",
                     msgType: "$lastMessage.msgType",
+                    sendBy: "$lastMessage.sendBy",
+                    isSent: "$lastMessage.isSent",
+                    isDelivered: "$lastMessage.isDelivered",
+                    isRead: "$lastMessage.isRead",
+                    isFailed: "$lastMessage.isFailed",
                     createdAt: "$lastMessage.createdAt"
-                },
-                contact: {
-                    _id: "$contact._id",
-                    name: "$contact.name",
-                    mobileNoWithCode: "$contact.mobileNoWithCode"
                 }
             }
-        },
-        { $sort: { lastMessageAt: -1, createdAt: -1 } },
-        { $skip: skip },
-        { $limit: limit }
+        }
     ];
+
     try {
-        return await ticketModel.aggregate(pipeline);
+        return await messageModel.aggregate(pipeline);
     } catch (err) {
         console.error("[message.service] getChatList error:", err);
         return false;
     }
 };
 
-const softDeleteMessage = async (messageId) =>
-    messageModel.findOneAndUpdate({ _id: messageId }, { isDelete: true });
+
 
 module.exports = {
     saveMessageRecord,
@@ -142,5 +161,6 @@ module.exports = {
     findMessagesByBroadcastId,
     getBroadcastMessageStats,
     softDeleteMessage,
-    createAndUpsertTicket
+    createAndUpsertTicket,
+    getChatList
 };

@@ -4,7 +4,7 @@ import AppLayout from "../components/layout/AppLayout";
 import { useAuth } from "../context/AuthContext";
 import { socket } from "../socket";
 import {
-    listContacts,
+    chatlist,
     getMessagesByContact,
     sendMessage,
 } from "../api/chats";
@@ -36,7 +36,8 @@ export default function Chats() {
         try {
             setContactsLoading(true);
             setContactsError("");
-            const res = await listContacts({ limit: 100, search: searchTerm });
+            const res = await chatlist({ limit: 10, skip: 0, search: searchTerm });
+            console.log("loadContacts response:", res);
             setContacts(Array.isArray(res?.data) ? res.data : []);
         } catch (err) {
             console.error("loadContacts failed:", err);
