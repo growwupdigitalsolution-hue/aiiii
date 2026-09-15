@@ -5,7 +5,17 @@ const userModel = require("../models/users.model");
 
 class Controller {
 
-    /* Optional: pass io from the main server entry */
+    constructor() {
+        // sabhi methods ko bind karo taki route me pass hone par bhi 'this' sahi rahe
+        this.getAllTciket = this.getAllTciket.bind(this);
+        this.getTicketById = this.getTicketById.bind(this);
+        this.assignTicketInGroup = this.assignTicketInGroup.bind(this);
+        this.cancelTicket = this.cancelTicket.bind(this);
+        this.updateReadCount = this.updateReadCount.bind(this);
+        this.getGroupByTicket = this.getGroupByTicket.bind(this);
+        this.upsertTicketFromMessage = this.upsertTicketFromMessage.bind(this);
+    }
+
     setIO(io) {
         this.io = io;
     }

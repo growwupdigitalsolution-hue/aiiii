@@ -10,7 +10,7 @@ const ticketSchema = new mongoose.Schema(
         lastMessageAt: { type: Date, default: null },
         ticketType: {
             type: String,
-            enum: ["urgent", "high", "medium", "low"],
+            enum: ["all", "urgent", "high", "medium", "low"],
             default: "all",
         },
         ticketstatus: {

@@ -102,6 +102,8 @@ class Controller {
                 payload.message = String(message).trim();
             }
 
+
+
             const result = await messageService.createAndUpsertTicket(payload);
 
             if (!result.message) {

@@ -10,5 +10,6 @@ router.get("/get-group-by-ticket", helper.verifyToken, controller.getGroupByTick
 router.post("/assign-ticket-in-group", helper.verifyToken, controller.assignTicketInGroup)
 router.post("/cancel-ticket", helper.verifyToken, controller.cancelTicket)
 router.post("/update-readCount", helper.verifyToken, controller.updateReadCount)
+router.get("/get-ticket-by-id/:id", helper.verifyToken, controller.getTicketById)
 
 module.exports = router;

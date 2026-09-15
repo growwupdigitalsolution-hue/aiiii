@@ -181,7 +181,7 @@ class Services {
                                     $expr: {
                                         $and: [
                                             { $eq: ["$groupId", "$$groupId"] },
-                                            { $eq: ["$createdby", new ObjectId(getData.userId)] },
+                                            { $eq: ["$userId", new ObjectId(getData.userId)] },
                                             { $eq: ["$ticketstatus", "inProgress"] },
                                         ],
                                     },

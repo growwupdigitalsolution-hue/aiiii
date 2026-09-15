@@ -544,3 +544,57 @@
         display: none;
     }
 }
+
+/* board ab har jagah horizontally scroll karega, groups included */
+.tkt-board {
+    scroll-behavior: smooth;
+}
+
+/* column ke andar fixed height + vertical scroll, taki "10 dikhao baaki scroll pe" kaam kare */
+.tkt-column__cards {
+    max-height: calc(100vh - 260px);
+    overflow-y: auto;
+    padding-right: 4px;
+    scrollbar-width: thin;
+}
+
+.tkt-column__cards::-webkit-scrollbar {
+    width: 5px;
+}
+
+.tkt-column__cards::-webkit-scrollbar-thumb {
+    background: var(--color-border);
+    border-radius: 10px;
+}
+
+.tkt-scroll-hint {
+    text-align: center;
+    font-size: 11px;
+    color: var(--color-text-muted);
+    padding: 6px 0 2px;
+}
+
+.tkt-error-banner {
+    background: #fee2e2;
+    color: #b91c1c;
+    border-radius: 8px;
+    padding: 10px 14px;
+    font-size: 12.5px;
+    font-weight: 600;
+    margin-bottom: 12px;
+}
+
+.tkt-loading {
+    padding: 40px;
+    color: var(--color-text-muted);
+    font-size: 13px;
+}
+
+.tkt-unread-badge {
+    background: var(--color-accent);
+    color: #fff;
+    font-size: 10.5px;
+    font-weight: 700;
+    border-radius: 20px;
+    padding: 1px 7px;
+}
